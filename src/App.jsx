@@ -222,41 +222,41 @@ int main() {
         <div className="min-h-screen bg-gray-50 font-sans text-slate-900">
             {/* Navigation */}
             <nav className="bg-white border-b border-gray-200 sticky top-0 z-50">
-                <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="flex justify-between h-16 items-center">
+                <div className="max-w-5xl mx-auto px-3 sm:px-6 lg:px-8">
+                    <div className="flex justify-between h-14 sm:h-16 items-center">
                         {/* Logo Section */}
-                        <div className="flex items-center gap-3">
-                            <div className="bg-slate-900 text-white p-2 rounded-lg">
-                                <Zap size={20} fill="currentColor" className="text-white" />
+                        <div className="flex items-center gap-2 sm:gap-3">
+                            <div className="bg-slate-900 text-white p-1.5 sm:p-2 rounded-lg">
+                                <Zap size={16} fill="currentColor" className="text-white sm:w-5 sm:h-5" />
                             </div>
                             <div className="flex flex-col">
-                                <span className="font-bold text-lg leading-tight text-slate-900">Chaos Compiler</span>
-                                <span className="text-xs text-slate-500 font-medium">Polymorphic Compilation</span>
+                                <span className="font-bold text-sm sm:text-lg leading-tight text-slate-900">Chaos Compiler</span>
+                                <span className="text-[10px] sm:text-xs text-slate-500 font-medium hidden xs:block">Polymorphic Compilation</span>
                             </div>
                         </div>
 
                         {/* Nav Items */}
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1 sm:gap-2">
                             <button
                                 onClick={() => setActiveTab("compiler")}
-                                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${activeTab === 'compiler' ? 'bg-slate-900 text-white hover:bg-slate-800' : 'text-slate-600 hover:bg-slate-100'}`}
+                                className={`flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-colors ${activeTab === 'compiler' ? 'bg-slate-900 text-white hover:bg-slate-800' : 'text-slate-600 hover:bg-slate-100'}`}
                             >
-                                <Zap size={16} />
-                                Compiler
+                                <Zap size={14} className="sm:w-4 sm:h-4" />
+                                <span className="hidden xs:inline">Compiler</span>
                             </button>
                             <button
                                 onClick={() => setActiveTab("agents")}
-                                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${activeTab === 'agents' ? 'bg-slate-900 text-white hover:bg-slate-800' : 'text-slate-600 hover:bg-slate-100'}`}
+                                className={`flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-colors ${activeTab === 'agents' ? 'bg-slate-900 text-white hover:bg-slate-800' : 'text-slate-600 hover:bg-slate-100'}`}
                             >
-                                <Users size={18} />
-                                Agents
+                                <Users size={14} className="sm:w-[18px] sm:h-[18px]" />
+                                <span className="hidden xs:inline">Agents</span>
                             </button>
                             <button
                                 onClick={() => setActiveTab("about")}
-                                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${activeTab === 'about' ? 'bg-slate-900 text-white hover:bg-slate-800' : 'text-slate-600 hover:bg-slate-100'}`}
+                                className={`flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-colors ${activeTab === 'about' ? 'bg-slate-900 text-white hover:bg-slate-800' : 'text-slate-600 hover:bg-slate-100'}`}
                             >
-                                <Info size={18} />
-                                About
+                                <Info size={14} className="sm:w-[18px] sm:h-[18px]" />
+                                <span className="hidden xs:inline">About</span>
                             </button>
                         </div>
                     </div>
@@ -264,26 +264,26 @@ int main() {
             </nav>
 
             {/* Main Content */}
-            <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+            <main className="max-w-5xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-8 space-y-4 sm:space-y-8">
 
                 {activeTab === 'compiler' && (
                     <>
                         {/* Header Section */}
-                        <div className="flex justify-between items-end pb-2">
-                            <div>
-                                <h1 className="text-4xl font-extrabold text-slate-900 tracking-tight mb-2">The Chaos Compiler</h1>
-                                <p className="text-lg text-slate-500 font-medium">Controlled Non-Deterministic Compilation Framework</p>
+                        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end pb-2 gap-3 sm:gap-0">
+                            <div className="flex-1">
+                                <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-slate-900 tracking-tight mb-1 sm:mb-2">The Chaos Compiler</h1>
+                                <p className="text-sm sm:text-base lg:text-lg text-slate-500 font-medium">Controlled Non-Deterministic Compilation Framework</p>
                             </div>
-                            <div className="text-right">
-                                <span className="block text-4xl font-bold text-slate-900 leading-none">{compilationCount}</span>
-                                <span className="text-sm text-slate-500 font-medium">Compilations</span>
+                            <div className="text-left sm:text-right">
+                                <span className="block text-3xl sm:text-4xl font-bold text-slate-900 leading-none">{compilationCount}</span>
+                                <span className="text-xs sm:text-sm text-slate-500 font-medium">Compilations</span>
                             </div>
                         </div>
 
                         {/* Info Alert */}
-                        <div className="bg-slate-100/80 border border-slate-200 rounded-lg p-4 flex items-start gap-3">
-                            <Info className="flex-shrink-0 text-slate-500 mt-0.5" size={20} />
-                            <p className="text-slate-600">
+                        <div className="bg-slate-100/80 border border-slate-200 rounded-lg p-3 sm:p-4 flex items-start gap-2 sm:gap-3">
+                            <Info className="flex-shrink-0 text-slate-500 mt-0.5" size={16} />
+                            <p className="text-xs sm:text-sm lg:text-base text-slate-600">
                                 Each compilation generates a <span className="font-bold text-slate-800">unique binary signature</span> while maintaining <span className="font-bold text-slate-800">identical behavior</span>. Try compiling the same code multiple times to see polymorphic outputs!
                             </p>
                         </div>
@@ -297,12 +297,12 @@ int main() {
                                     exit={{ opacity: 0, height: 0 }}
                                     className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden"
                                 >
-                                    <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center">
-                                        <h3 className="font-semibold text-slate-800">Compilation Pipeline</h3>
-                                        {isCompiling && <span className="text-xs font-bold text-blue-600 animate-pulse">PROCESSING...</span>}
+                                    <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-100 flex justify-between items-center">
+                                        <h3 className="font-semibold text-sm sm:text-base text-slate-800">Compilation Pipeline</h3>
+                                        {isCompiling && <span className="text-[10px] sm:text-xs font-bold text-blue-600 animate-pulse">PROCESSING...</span>}
                                     </div>
-                                    <div className="p-8">
-                                        <div className="flex items-center justify-between px-8 relative">
+                                    <div className="p-4 sm:p-6 lg:p-8 overflow-x-auto">
+                                        <div className="flex items-center justify-between px-4 sm:px-8 relative min-w-[600px] sm:min-w-0">
                                             {/* Progress Line */}
                                             {isCompiling && isAuto && (
                                                 <motion.div
@@ -373,27 +373,28 @@ int main() {
 
                         {/* Source Code Input */}
                         <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
-                            <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center">
-                                <div className="flex items-center gap-2 text-slate-700">
-                                    <Code2 size={20} />
-                                    <h3 className="font-semibold">Source Code Input</h3>
+                            <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-100 flex justify-between items-center">
+                                <div className="flex items-center gap-1.5 sm:gap-2 text-slate-700">
+                                    <Code2 size={16} className="sm:w-5 sm:h-5" />
+                                    <h3 className="font-semibold text-sm sm:text-base">Source Code Input</h3>
                                 </div>
 
-                                <div className="flex items-center gap-3">
+                                <div className="flex items-center gap-1.5 sm:gap-3">
                                     <button
                                         onClick={handleCopyCode}
-                                        className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-all flex items-center gap-1.5 text-xs font-medium"
+                                        className="p-1 sm:p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-all flex items-center gap-1 sm:gap-1.5 text-[10px] sm:text-xs font-medium"
                                         title="Copy Code"
                                     >
-                                        {copiedCode ? <Check size={14} className="text-emerald-500" /> : <Copy size={14} />}
-                                        {copiedCode ? "Copied!" : "Copy"}
+                                        {copiedCode ? <Check size={12} className="text-emerald-500 sm:w-3.5 sm:h-3.5" /> : <Copy size={12} className="sm:w-3.5 sm:h-3.5" />}
+                                        <span className="hidden sm:inline">{copiedCode ? "Copied!" : "Copy"}</span>
                                     </button>
                                     <button
                                         onClick={loadExample}
-                                        className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-slate-600 hover:text-slate-900 border border-slate-200 rounded-md hover:bg-slate-50 transition-colors"
+                                        className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1 sm:py-1.5 text-xs sm:text-sm font-medium text-slate-600 hover:text-slate-900 border border-slate-200 rounded-md hover:bg-slate-50 transition-colors"
                                     >
-                                        <RotateCcw size={14} />
-                                        Load Example
+                                        <RotateCcw size={12} className="sm:w-3.5 sm:h-3.5" />
+                                        <span className="hidden xs:inline">Load Example</span>
+                                        <span className="xs:hidden">Example</span>
                                     </button>
                                 </div>
                             </div>
@@ -406,10 +407,10 @@ int main() {
                             )}
 
                             {/* Editor */}
-                            <div className="h-64 rounded-lg overflow-hidden border border-gray-200 focus-within:ring-2 focus-within:ring-slate-200 focus-within:border-transparent transition-all shadow-inner bg-[#2d2d2d] flex">
+                            <div className="h-48 sm:h-64 rounded-lg overflow-hidden border border-gray-200 focus-within:ring-2 focus-within:ring-slate-200 focus-within:border-transparent transition-all shadow-inner bg-[#2d2d2d] flex">
                                 <div
-                                    className="bg-[#252525] text-slate-500 text-right pr-3 pl-4 py-5 select-none font-mono text-sm border-r border-[#3d3d3d] flex flex-col pointer-events-none"
-                                    style={{ minWidth: '45px' }}
+                                    className="bg-[#252525] text-slate-500 text-right pr-2 sm:pr-3 pl-2 sm:pl-4 py-3 sm:py-5 select-none font-mono text-xs sm:text-sm border-r border-[#3d3d3d] flex flex-col pointer-events-none"
+                                    style={{ minWidth: '35px' }}
                                 >
                                     {code.split('\n').map((_, i) => (
                                         <div key={i} className="leading-normal">{i + 1}</div>
@@ -420,12 +421,12 @@ int main() {
                                         value={code}
                                         onValueChange={setCode}
                                         highlight={code => highlight(code, languages.c || languages.clike)}
-                                        padding={20}
+                                        padding={window.innerWidth < 640 ? 12 : 20}
                                         placeholder="Enter your C code here..."
                                         style={{
                                             fontFamily: '"Fira Code", "Fira Mono", monospace',
-                                            fontSize: 14,
-                                            backgroundColor: '#2d2d2d', // Match prism-tomorrow
+                                            fontSize: window.innerWidth < 640 ? 12 : 14,
+                                            backgroundColor: '#2d2d2d',
                                             color: '#ccc',
                                             minHeight: '100%',
                                         }}
@@ -435,14 +436,14 @@ int main() {
                             </div>
                         </div>
 
-                        <div className="mt-6 flex items-end justify-between gap-4">
-                            <div className="flex-1 max-w-xs space-y-2">
-                                <label className="text-sm font-semibold text-slate-700">Chaos Intensity</label>
+                        <div className="mt-4 sm:mt-6 flex flex-col sm:flex-row items-stretch sm:items-end justify-between gap-3 sm:gap-4">
+                            <div className="flex-1 max-w-full sm:max-w-xs space-y-1.5 sm:space-y-2">
+                                <label className="text-xs sm:text-sm font-semibold text-slate-700">Chaos Intensity</label>
                                 <div className="relative">
                                     <select
                                         value={intensity}
                                         onChange={(e) => setIntensity(e.target.value)}
-                                        className="w-full appearance-none bg-white border border-gray-200 hover:border-gray-300 text-slate-700 py-2.5 px-3 pr-8 rounded-lg text-sm font-medium outline-none focus:ring-2 focus:ring-slate-200"
+                                        className="w-full appearance-none bg-white border border-gray-200 hover:border-gray-300 text-slate-700 py-2 sm:py-2.5 px-3 pr-8 rounded-lg text-xs sm:text-sm font-medium outline-none focus:ring-2 focus:ring-slate-200"
                                     >
                                         <option value="none">None - Clean compilation</option>
                                         <option value="low">Low - Subtle variations</option>
@@ -450,37 +451,39 @@ int main() {
                                         <option value="high">High - Maximum entropy</option>
                                     </select>
                                     <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-slate-500">
-                                        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <svg className="h-3 w-3 sm:h-4 sm:w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                                         </svg>
                                     </div>
                                 </div>
                             </div>
 
-                            <div className="flex items-center gap-3">
+                            <div className="flex items-center gap-2 sm:gap-3">
                                 <button
                                     onClick={handleFormat}
-                                    className="flex items-center gap-2 bg-white hover:bg-slate-50 text-slate-700 px-4 py-2.5 rounded-lg text-sm font-semibold border border-slate-200 transition-all shadow-sm active:scale-95"
+                                    className="flex items-center gap-1.5 sm:gap-2 bg-white hover:bg-slate-50 text-slate-700 px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg text-xs sm:text-sm font-semibold border border-slate-200 transition-all shadow-sm active:scale-95 flex-1 sm:flex-initial justify-center"
                                     title="Format Code (Beautify)"
                                 >
-                                    <Sparkles size={16} className="text-blue-500" />
+                                    <Sparkles size={14} className="text-blue-500 sm:w-4 sm:h-4" />
                                     Beautify
                                 </button>
 
                                 <button
                                     onClick={handleCompile}
                                     disabled={isCompiling}
-                                    className={`flex items-center gap-2 bg-slate-900 hover:bg-slate-800 text-white px-8 py-2.5 rounded-lg text-sm font-semibold transition-all transform active:scale-95 shadow-sm ${isCompiling ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                    className={`flex items-center gap-1.5 sm:gap-2 bg-slate-900 hover:bg-slate-800 text-white px-4 sm:px-8 py-2 sm:py-2.5 rounded-lg text-xs sm:text-sm font-semibold transition-all transform active:scale-95 shadow-sm flex-1 sm:flex-initial justify-center ${isCompiling ? 'opacity-50 cursor-not-allowed' : ''}`}
                                 >
                                     {isCompiling ? (
                                         <>
-                                            <Shuffle size={16} className="animate-spin" />
-                                            Running...
+                                            <Shuffle size={14} className="animate-spin sm:w-4 sm:h-4" />
+                                            <span className="hidden xs:inline">Running...</span>
+                                            <span className="xs:hidden">Run...</span>
                                         </>
                                     ) : (
                                         <>
-                                            <Play size={16} fill="currentColor" />
-                                            Start Compilation
+                                            <Play size={14} fill="currentColor" className="sm:w-4 sm:h-4" />
+                                            <span className="hidden sm:inline">Start Compilation</span>
+                                            <span className="sm:hidden">Compile</span>
                                         </>
                                     )}
                                 </button>
@@ -521,7 +524,7 @@ int main() {
                                         <ParseTreeCard ast={ast} />
                                     </motion.div>
 
-                                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
                                         {/* Original IR (Placeholder for now, keeping static visual for layout continuity until IR generator is fully ported) */}
                                         <motion.div
                                             initial={{ opacity: 0, y: 20 }}
@@ -687,7 +690,7 @@ int main() {
                                                 Each compilation produces a <span className="font-bold text-slate-800">different binary signature</span> while maintaining <span className="font-bold text-slate-800">identical behavior</span>.
                                             </p>
 
-                                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
                                                 {compilationHistory.map((run) => (
                                                     <motion.div
                                                         key={run.id}
@@ -747,7 +750,7 @@ int main() {
                             <p className="text-lg text-slate-500 font-medium">Modular architecture for building the Chaos Compiler system</p>
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
                             {/* Agent 1 - Frontend Architect */}
                             <div className="bg-white rounded-xl border border-gray-200 hover:border-slate-300 transition-colors shadow-sm p-6 flex flex-col h-full relative overflow-hidden group">
                                 <span className="absolute top-4 right-4 text-7xl font-bold text-slate-50 opacity-50 z-0">1</span>
@@ -1195,7 +1198,7 @@ int main() {
             </main >
 
             {/* Footer */}
-            < footer className="py-8 text-center text-slate-400 text-sm" >
+            < footer className="py-6 sm:py-8 text-center text-slate-400 text-xs sm:text-sm px-4" >
                 An experimental compiler infrastructure for enhanced software robustness and security
             </footer >
         </div >
