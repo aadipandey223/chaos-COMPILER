@@ -1,0 +1,67 @@
+{
+  "name": "CompilationRun",
+  "type": "object",
+  "properties": {
+    "source_code": {
+      "type": "string",
+      "description": "Original source code input"
+    },
+    "chaos_seed": {
+      "type": "number",
+      "description": "Random seed used for this compilation"
+    },
+    "chaos_intensity": {
+      "type": "string",
+      "enum": [
+        "low",
+        "medium",
+        "high",
+        "extreme"
+      ],
+      "default": "medium",
+      "description": "How chaotic the transformations are"
+    },
+    "original_ir": {
+      "type": "array",
+      "description": "Initial IR from parser",
+      "items": {
+        "type": "object"
+      }
+    },
+    "chaotic_ir": {
+      "type": "array",
+      "description": "Transformed IR after chaos injection",
+      "items": {
+        "type": "object"
+      }
+    },
+    "assembly_output": {
+      "type": "string",
+      "description": "Generated assembly code"
+    },
+    "verification_status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "passed",
+        "failed"
+      ],
+      "default": "pending"
+    },
+    "execution_output": {
+      "type": "string",
+      "description": "Runtime output for verification"
+    },
+    "transformations_applied": {
+      "type": "array",
+      "description": "List of chaos transformations used",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "required": [
+    "source_code",
+    "chaos_seed"
+  ]
+}
