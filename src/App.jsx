@@ -301,8 +301,9 @@ int main() {
                                         <h3 className="font-semibold text-sm sm:text-base text-slate-800">Compilation Pipeline</h3>
                                         {isCompiling && <span className="text-[10px] sm:text-xs font-bold text-blue-600 animate-pulse">PROCESSING...</span>}
                                     </div>
-                                    <div className="p-4 sm:p-6 lg:p-8 overflow-x-auto">
-                                        <div className="flex items-center justify-between px-4 sm:px-8 relative min-w-[600px] sm:min-w-0">
+                                    <div className="p-4 sm:p-6 lg:p-8">
+                                        {/* Desktop: Horizontal Layout */}
+                                        <div className="hidden sm:flex items-center justify-between px-8 relative">
                                             {/* Progress Line */}
                                             {isCompiling && isAuto && (
                                                 <motion.div
@@ -365,6 +366,88 @@ int main() {
                                                 </motion.div>
                                                 <span className={`text-sm font-bold transition-colors ${pipelineStep >= 4 ? 'text-slate-800' : 'text-slate-300'}`}>Verifier</span>
                                             </div>
+                                        </div>
+
+                                        {/* Mobile: 2x2 Grid Layout */}
+                                        <div className="grid grid-cols-2 gap-4 sm:hidden relative">
+                                            {/* Step 1 - Parser */}
+                                            <div className="flex flex-col items-center gap-2 relative">
+                                                <motion.div
+                                                    animate={pipelineStep === 1 ? { scale: [1, 1.1, 1], borderColor: "#3b82f6", boxShadow: "0 0 0 3px rgba(59, 130, 246, 0.2)" } : pipelineStep > 1 ? { borderColor: "#3b82f6", color: "#3b82f6" } : {}}
+                                                    className={`w-14 h-14 bg-slate-50 rounded-xl flex items-center justify-center border-2 transition-all duration-300 ${pipelineStep >= 1 ? 'border-blue-500 text-blue-500' : 'border-transparent text-slate-400'}`}
+                                                >
+                                                    <FileText size={22} />
+                                                </motion.div>
+                                                <span className={`text-xs font-bold transition-colors ${pipelineStep >= 1 ? 'text-slate-800' : 'text-slate-300'}`}>Parser</span>
+                                                {pipelineStep >= 1 && (
+                                                    <div className="absolute -right-2 top-6 w-4 h-0.5 bg-blue-300"></div>
+                                                )}
+                                            </div>
+
+                                            {/* Step 2 - Chaos */}
+                                            <div className="flex flex-col items-center gap-2 relative">
+                                                <motion.div
+                                                    animate={pipelineStep === 2 ? { scale: [1, 1.1, 1], borderColor: "#eab308", boxShadow: "0 0 0 3px rgba(234, 179, 8, 0.2)" } : pipelineStep > 2 ? { borderColor: "#eab308", color: "#eab308" } : {}}
+                                                    className={`w-14 h-14 bg-slate-50 rounded-xl flex items-center justify-center border-2 transition-all duration-300 ${pipelineStep >= 2 ? 'border-yellow-500 text-yellow-500' : 'border-transparent text-slate-400'}`}
+                                                >
+                                                    <Zap size={22} />
+                                                </motion.div>
+                                                <span className={`text-xs font-bold transition-colors ${pipelineStep >= 2 ? 'text-slate-800' : 'text-slate-300'}`}>Chaos</span>
+                                                {pipelineStep >= 2 && (
+                                                    <div className="absolute -bottom-2 left-6 w-0.5 h-4 bg-yellow-300"></div>
+                                                )}
+                                            </div>
+
+                                            {/* Step 3 - CodeGen */}
+                                            <div className="flex flex-col items-center gap-2 relative">
+                                                <motion.div
+                                                    animate={pipelineStep === 3 ? { scale: [1, 1.1, 1], borderColor: "#a855f7", boxShadow: "0 0 0 3px rgba(168, 85, 247, 0.2)" } : pipelineStep > 3 ? { borderColor: "#a855f7", color: "#a855f7" } : {}}
+                                                    className={`w-14 h-14 bg-slate-50 rounded-xl flex items-center justify-center border-2 transition-all duration-300 ${pipelineStep >= 3 ? 'border-purple-500 text-purple-500' : 'border-transparent text-slate-400'}`}
+                                                >
+                                                    <div className="font-mono text-sm font-bold leading-none flex flex-col items-center">
+                                                        <span>01</span>
+                                                        <span>10</span>
+                                                    </div>
+                                                </motion.div>
+                                                <span className={`text-xs font-bold transition-colors ${pipelineStep >= 3 ? 'text-slate-800' : 'text-slate-300'}`}>CodeGen</span>
+                                                {pipelineStep >= 3 && (
+                                                    <div className="absolute -right-2 top-6 w-4 h-0.5 bg-purple-300"></div>
+                                                )}
+                                            </div>
+
+                                            {/* Step 4 - Verifier */}
+                                            <div className="flex flex-col items-center gap-2 relative">
+                                                <motion.div
+                                                    animate={pipelineStep === 4 ? { scale: [1, 1.1, 1], borderColor: "#22c55e", boxShadow: "0 0 0 3px rgba(34, 197, 94, 0.2)" } : pipelineStep > 4 ? { borderColor: "#22c55e", color: "#22c55e" } : {}}
+                                                    className={`w-14 h-14 bg-slate-50 rounded-xl flex items-center justify-center border-2 transition-all duration-300 ${pipelineStep >= 4 ? 'border-green-500 text-green-500' : 'border-transparent text-slate-400'}`}
+                                                >
+                                                    <ShieldCheck size={22} />
+                                                </motion.div>
+                                                <span className={`text-xs font-bold transition-colors ${pipelineStep >= 4 ? 'text-slate-800' : 'text-slate-300'}`}>Verifier</span>
+                                            </div>
+
+                                            {/* Grid Flow Indicator */}
+                                            {isCompiling && isAuto && (
+                                                <motion.div
+                                                    className="absolute inset-0 pointer-events-none"
+                                                    initial={{ opacity: 0 }}
+                                                    animate={{ opacity: 1 }}
+                                                    transition={{ duration: 0.3 }}
+                                                >
+                                                    <svg className="w-full h-full" style={{ position: 'absolute', top: 0, left: 0 }}>
+                                                        <motion.path
+                                                            d="M 80 28 L 100 28 M 80 28 L 80 50 M 80 50 L 100 50"
+                                                            stroke="#93c5fd"
+                                                            strokeWidth="2"
+                                                            fill="none"
+                                                            strokeDasharray="4 4"
+                                                            initial={{ pathLength: 0 }}
+                                                            animate={{ pathLength: 1 }}
+                                                            transition={{ duration: 1.5, ease: "linear" }}
+                                                        />
+                                                    </svg>
+                                                </motion.div>
+                                            )}
                                         </div>
                                     </div>
                                 </motion.div>
