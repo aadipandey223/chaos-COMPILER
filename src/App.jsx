@@ -503,7 +503,7 @@ int main() {
                                     <Editor
                                         value={code}
                                         onValueChange={setCode}
-                                        highlight={code => highlight(code, languages.c || languages.clike)}
+                                        highlight={code => highlight(code, languages.c || languages.clike, languages.c ? 'c' : 'clike')}
                                         padding={window.innerWidth < 640 ? 12 : 20}
                                         placeholder="Enter your C code here..."
                                         style={{
