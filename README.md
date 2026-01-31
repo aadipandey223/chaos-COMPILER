@@ -1,18 +1,18 @@
-# Chaos Compiler
+# Chaos Lab — Compiler Transformation Laboratory
 
 **IR-level chaos compiler framework with validation-gated diagnostics.**
 
 <p align="center">
-  <img src="./public/screenshots/hero.png" alt="Chaos Compiler UI" width="100%">
+  <img src="./public/screenshots/hero.png" alt="Chaos Lab UI" width="100%">
 </p>
 
 ## Overview
 
-Chaos Compiler is an educational compiler front-end and IR-level transformation framework; it does not generate native binaries. It performs **semantic-preserving transformations** at the Intermediate Representation (IR) level. It operates entirely in the browser, compiling C code to an internal IR, identifying opportunities for obfuscation, and generating assembly output.
+Chaos Lab is a research-focused compiler front-end and IR-level transformation laboratory. It performs **semantic-preserving transformations** at the Intermediate Representation (IR) level, serving as an engine for studying program obfuscation and polymorphic code generation.
 
 ## Why This Project Exists
 
-Most obfuscation tools act as black boxes. Chaos Compiler is designed to make obfuscation *visible*, *explainable*, and *verifiable* at the IR level, so developers and researchers can understand how chaos affects program structure without breaking semantics.
+Most obfuscation tools act as black boxes. Chaos Lab is designed to make obfuscation *visible*, *explainable*, and *verifiable* at the IR level, allowing researchers to study how chaos affects program structure without breaking semantics.
 
 The goal is to demonstrate how compiler-level obfuscation works by making the transformations inspectable and explainable.
 
@@ -107,7 +107,7 @@ The MCP layer generates the explanatory text for transformations. To prevent hal
 
 ## 🔬 Validation Failure Simulation (Testing Mode)
 
-Chaos Compiler includes an explicit failure simulation mode to demonstrate the authority of the Lingo.dev Compiler.
+Chaos Lab includes an explicit failure simulation mode to demonstrate the authority of the Lingo.dev Compiler.
 
 When a failure mode is selected (e.g., "Missing Severity"):
 1.  **Auditable Injection**: The backend intentionally injects a malformed diagnostic JSON into the diagnostic stream.

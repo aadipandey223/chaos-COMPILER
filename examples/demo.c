@@ -1,8 +1,8 @@
 /**
- * Chaos Compiler Demo
+ * Chaos Lab Demo
  * 
  * This program demonstrates the specific language features that
- * the Chaos Compiler supports and transforms:
+ * the Chaos Lab supports and transforms:
  * 1. Arithmetic ops (Target for Instruction Substitution)
  * 2. If/Else logic (Target for Opaque Predicates)
  * 3. While loops (Target for Control Flow Flattening)

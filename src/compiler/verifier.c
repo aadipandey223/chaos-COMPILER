@@ -13,7 +13,7 @@ int run_binary(const char* binary_path) {
 }
 
 int main(int argc, char** argv) {
-    printf("--- Chaos Compiler Differential Verifier ---\n");
+    printf("--- Chaos Lab Differential Verifier ---\n");
 
     if (argc < 3) {
         printf("Usage: verifier <ref_binary> <chaos_binary>\n");

@@ -220,11 +220,11 @@ function App() {
                         <div className="flex items-center gap-2 sm:gap-3">
                             <img
                                 src="/logo.png"
-                                alt="Chaos Compiler Logo"
+                                alt="Chaos Lab Logo"
                                 className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg object-contain mcp-glow bg-slate-900/50"
                             />
                             <div className="hidden xs:block">
-                                <span className="font-bold text-sm sm:text-lg text-white block leading-tight">Chaos Compiler</span>
+                                <span className="font-bold text-sm sm:text-lg text-white block leading-tight">Chaos Lab</span>
                                 <p className="text-[8px] sm:text-[10px] text-slate-400 font-medium">Powered by Lingo.dev</p>
                             </div>
                         </div>

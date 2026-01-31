@@ -28,9 +28,9 @@ export const IntroOverlay = ({ onDismiss }) => {
                             alt="Logo"
                             className="w-32 h-32 sm:w-56 sm:h-56 object-contain drop-shadow-[0_0_40px_rgba(0,180,216,0.3)] mb-[-0.5rem] sm:mb-[-1.5rem] scale-110"
                         />
-                        <h2 className="text-2xl sm:text-4xl font-bold text-white tracking-tight">Chaos Compiler</h2>
+                        <h2 className="text-2xl sm:text-4xl font-bold text-white tracking-tight text-center">Chaos Lab — Compiler Transformation Laboratory</h2>
                         <p className="text-slate-400 text-xs sm:text-sm leading-relaxed max-w-sm mx-auto mt-2 px-2">
-                            An educational compiler where <span className="text-white font-semibold">AI explains what's happening</span>, and <span className="text-lingo font-extrabold tracking-wide">Lingo.dev enforces truth</span>.
+                            A research environment where <span className="text-white font-semibold">AI explains what's happening</span>, and <span className="text-lingo font-extrabold tracking-wide">Lingo.dev enforces truth</span>.
                         </p>
                     </div>
 
@@ -73,7 +73,7 @@ export const IntroOverlay = ({ onDismiss }) => {
                         onClick={onDismiss}
                         className="w-full flex items-center justify-center gap-2 py-4 bg-lingo hover:bg-lingo-hover text-white font-bold rounded-xl transition-all shadow-lg shadow-lingo/20 group transform-gpu active:scale-[0.98]"
                     >
-                        Open Compiler
+                        Open Lab
                         <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
                     </button>
 

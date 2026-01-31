@@ -9,7 +9,7 @@ const char* get_reg(int i) {
 }
 
 void generate_assembly(IRProgram* prog) {
-    printf("; Chaos Compiler Assembly Output\n");
+    printf("; Chaos Lab Assembly Output\n");
     printf("section .text\n");
     printf("global _start\n\n");
     printf("_start:\n");
