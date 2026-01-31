@@ -1,3 +1,90 @@
+import { diagnostics } from './diagnostics';
+
+// ============================================================================
+// CONFIGURATION & CONSTANTS
+// ============================================================================
+
+// Chaos Budget Limits (prevents runaway complexity)
+const CHAOS_LIMITS = {
+    maxNewInstructions: 30,
+    maxControlDepth: 3,
+    maxEncodingOps: 10
+};
+
+// Chaos parameter themes
+const CHAOS_THEMES = {
+    'arithmetic': {
+        weights: { subst: 0.9, opaque: 0.2, flatten: 0.1, number_encoding: 0.8 },
+        name: 'Arithmetic Overload'
+    },
+    'control_flow': {
+        weights: { subst: 0.3, opaque: 0.9, flatten: 0.8, number_encoding: 0.2 },
+        name: 'Control Flow Maze'
+    },
+    'balanced': {
+        weights: { subst: 0.6, opaque: 0.5, flatten: 0.4, number_encoding: 0.5 },
+        name: 'Balanced Chaos'
+    },
+    'data_obfuscation': {
+        weights: { subst: 0.4, opaque: 0.3, flatten: 0.2, number_encoding: 0.95 },
+        name: 'Data Obfuscation'
+    }
+};
+
+// ============================================================================
+// SEEDED RANDOM NUMBER GENERATOR (Reproducibility)
+// ============================================================================
+
+let currentSeed = 1;
+
+const seededRandom = () => {
+    currentSeed = (currentSeed * 16807) % 2147483647;
+    return (currentSeed - 1) / 2147483646;
+};
+
+const setSeed = (seed) => {
+    currentSeed = seed % 2147483647;
+    if (currentSeed <= 0) currentSeed += 2147483646;
+};
+
+// ============================================================================
+// CHAOS PLANNER
+// ============================================================================
+
+const generateChaosPlan = (ir, intensity, seed) => {
+    if (seed !== undefined) setSeed(seed);
+
+    const themes = Object.keys(CHAOS_THEMES);
+    let selectedThemeKey = 'balanced';
+
+    if (intensity === 'high') {
+        selectedThemeKey = themes[Math.floor(seededRandom() * themes.length)];
+    } else if (intensity === 'medium') {
+        selectedThemeKey = seededRandom() > 0.5 ? 'balanced' : 'arithmetic';
+    } else {
+        selectedThemeKey = 'balanced';
+    }
+
+    const theme = CHAOS_THEMES[selectedThemeKey];
+    const intensityMultiplier = intensity === 'high' ? 1.0 : (intensity === 'medium' ? 0.7 : 0.3);
+
+    const plan = {
+        theme: theme.name,
+        weights: {},
+        seed: currentSeed
+    };
+
+    for (const [k, v] of Object.entries(theme.weights)) {
+        plan.weights[k] = v * intensityMultiplier;
+    }
+
+    return plan;
+};
+
+// ============================================================================
+// IR GENERATION
+// ============================================================================
+
 export const generateIR = (node, ir = [], functions = {}) => {
     if (!node) return ir;
 
@@ -6,7 +93,6 @@ export const generateIR = (node, ir = [], functions = {}) => {
             node.body.forEach(stmt => generateIR(stmt, ir, functions));
             break;
         case 'FunctionDeclaration':
-            // Store function for later execution
             if (node.name !== 'main') {
                 functions[node.name] = node;
             } else {
@@ -19,7 +105,6 @@ export const generateIR = (node, ir = [], functions = {}) => {
                     const exprIr = generateExpressionIR(decl.init, ir, functions);
                     ir.push({ op: 'ASSIGN', target: decl.id, value: exprIr });
                 } else {
-                    // Default to 0 for uninitialized variables in IR
                     ir.push({ op: 'ASSIGN', target: decl.id, value: 0 });
                 }
             });
@@ -54,7 +139,7 @@ export const generateIR = (node, ir = [], functions = {}) => {
             generateExpressionIR(node.expression, ir, functions);
             break;
     }
-    ir.functions = functions;
+    ir['functions'] = functions;
     return ir;
 };
 
@@ -86,63 +171,265 @@ const generateExpressionIR = (node, ir, functions) => {
     }
 
     if (node.type === 'SizeofExpression') {
-        // Mock sizeof for now - in a real compiler this is a constant
-        return 4; // Mocking int size
+        // Limitation: Mocked for 32-bit int target
+        return 4;
     }
 };
 
-export const applyChaos = (ir, intensity = 'medium') => {
-    if (intensity === 'none') return { ir: [...ir], transforms: [] };
+// ============================================================================
+// CHAOS ENGINE (with Budget, Seeded RNG, and Negative Paths)
+// ============================================================================
+
+export const applyChaos = (ir, intensity = 'medium', seed = Date.now()) => {
+    if (intensity === 'none') {
+        diagnostics.emit('CHAOS_SKIPPED_DISABLED', 'chaos.safety', 'info', { reason: 'intensity_none' });
+        return { ir: [...ir], transforms: [], seed };
+    }
+
+    // Initialize seed for reproducibility
+    setSeed(seed);
+
+    // Generate specific plan for this run
+    const plan = generateChaosPlan(ir, intensity, seed);
+
+    // Emit selection event
+    diagnostics.emit('CHAOS_PLAN_SELECTED', 'chaos.planner', 'info', { strategy: plan.theme, intensity, seed });
+
     const chaoticIr = JSON.parse(JSON.stringify(ir));
     const transforms = [];
 
-    chaoticIr.forEach((instr, idx) => {
-        // 1. Commutativity swap (Low/Medium/High)
-        if (['ADD', 'MUL'].includes(instr.op) && Math.random() > 0.5) {
-            const oldLeft = instr.left;
-            instr.left = instr.right;
-            instr.right = oldLeft;
-            instr.meta = 'Swapped';
-            if (!transforms.includes('Swapped operands')) transforms.push('Swapped operands');
-        }
+    // Budget tracking
+    let budget = {
+        instructionsAdded: 0,
+        controlDepth: 0,
+        encodingOps: 0
+    };
 
-        // 2. Redundant loads (Medium/High)
-        if (['medium', 'high'].includes(intensity) && Math.random() > 0.7 && idx > 0) {
-            // Conceptually add a redundant load/store or just a note
-            instr.meta = (instr.meta ? instr.meta + ', ' : '') + 'Redundant Load';
-            if (!transforms.includes('Added redundant load')) transforms.push('Added redundant load');
+    const addTransform = (name, context, id, params) => {
+        if (!transforms.find(t => t.name === name)) {
+            transforms.push({ name, count: 1 });
+        } else {
+            transforms.find(t => t.name === name).count++;
         }
+        diagnostics.emit(id, context, 'info', params);
+    };
+
+    const checkBudget = (type, cost = 1) => {
+        if (type === 'instructions' && budget.instructionsAdded + cost > CHAOS_LIMITS.maxNewInstructions) {
+            return false;
+        }
+        if (type === 'control' && budget.controlDepth + cost > CHAOS_LIMITS.maxControlDepth) {
+            return false;
+        }
+        if (type === 'encoding' && budget.encodingOps + cost > CHAOS_LIMITS.maxEncodingOps) {
+            return false;
+        }
+        return true;
+    };
+
+    const processBlock = (block, blockId = 'main', depth = 0) => {
+        const result = [];
+        budget.controlDepth = Math.max(budget.controlDepth, depth);
+
+        block.forEach((instr, idx) => {
+            const w = plan.weights;
+
+            // ----------------------------------------------------------------
+            // 1. Number Encoding (with budget check)
+            // ----------------------------------------------------------------
+            if (seededRandom() < w.number_encoding &&
+                instr.op === 'ASSIGN' &&
+                typeof instr.value === 'number' &&
+                Number.isInteger(instr.value)) {
+
+                // Check budget constraints
+                if (!checkBudget('encoding', 2)) {
+                    diagnostics.emit('CHAOS_SKIPPED_BUDGET', 'chaos.safety', 'warning', {
+                        reason: 'encoding_budget_exceeded',
+                        block: blockId
+                    });
+                    result.push(instr);
+                    return;
+                }
+
+                const val = instr.value;
+                const offset = Math.floor(seededRandom() * 10) + 1;
+                const t1 = `enc_add_${idx}`;
+
+                result.push({ op: 'ADD', target: t1, left: val, right: offset, meta: 'CHAOS_NUM_ENC_ADD' });
+                result.push({ op: 'SUB', target: instr.target, left: t1, right: offset, meta: 'CHAOS_NUM_ENC_SUB' });
+
+                budget.instructionsAdded += 2;
+                budget.encodingOps += 1;
+                addTransform('Number Encoding', 'chaos.data.encoding', 'CHAOS_NUM_ENCODING', { orig: val, enc: `${t1} - ${offset}`, strategy: 'offset' });
+                return;
+            }
+
+            // ----------------------------------------------------------------
+            // 2. Instruction Substitution (ADD -> XOR/AND chain)
+            // ----------------------------------------------------------------
+            if (instr.op === 'ADD' && seededRandom() < w.subst) {
+                // NEGATIVE PATH: Skip if division involved (potential UB)
+                if (instr.left === 0 || instr.right === 0) {
+                    diagnostics.emit('CHAOS_SKIPPED_SAFETY', 'chaos.safety', 'warning', {
+                        reason: 'zero_operand',
+                        block: blockId
+                    });
+                    result.push(instr);
+                    return;
+                }
+
+                // NEGATIVE PATH: Budget check
+                if (!checkBudget('instructions', 4)) {
+                    diagnostics.emit('CHAOS_SKIPPED_BUDGET', 'chaos.safety', 'warning', {
+                        reason: 'instruction_budget_exceeded',
+                        block: blockId
+                    });
+                    result.push(instr);
+                    return;
+                }
+
+                const t1 = `chaos_xor_${idx}`;
+                const t2 = `chaos_and_${idx}`;
+                const t3 = `chaos_mul_${idx}`;
+
+                result.push({ op: 'XOR', target: t1, left: instr.left, right: instr.right, meta: 'CHAOS_SUBST_XOR' });
+                result.push({ op: 'AND', target: t2, left: instr.left, right: instr.right, meta: 'CHAOS_SUBST_AND' });
+                result.push({ op: 'MUL', target: t3, left: t2, right: 2, meta: 'CHAOS_SUBST_MUL' });
+                result.push({ op: 'ADD', target: instr.target, left: t1, right: t3, meta: 'CHAOS_SUBST_FINAL' });
+
+                budget.instructionsAdded += 4;
+                addTransform('Instruction Substitution', 'chaos.substitution', 'CHAOS_SUBST_ADD', { block: blockId, instr: idx, left: instr.left, right: instr.right, op: 'ADD' });
+                return;
+            }
+
+            // ----------------------------------------------------------------
+            // 3. Opaque Predicate
+            // ----------------------------------------------------------------
+            if (seededRandom() < w.opaque && instr.op === 'ASSIGN') {
+                // NEGATIVE PATH: Control depth exceeded
+                if (!checkBudget('control', 1)) {
+                    diagnostics.emit('CHAOS_SKIPPED_DEPTH', 'chaos.safety', 'warning', {
+                        reason: 'control_depth_exceeded',
+                        block: blockId
+                    });
+                    result.push(instr);
+                    return;
+                }
+
+                // VALUE-DEPENDENT OPAQUE PREDICATE: (x*x + x) % 2 == 0 (always true for any integer x)
+                const t_sq = `opaque_sq_${idx}`;
+                const t_sum = `opaque_sum_${idx}`;
+                const t_mod = `opaque_mod_${idx}`;
+                const t_cond = `opaque_cond_${idx}`;
+                const x = typeof instr.value === 'number' ? instr.value : 1;
+
+                result.push({ op: 'MUL', target: t_sq, left: x, right: x, meta: 'CHAOS_OPAQUE_SQ' });
+                result.push({ op: 'ADD', target: t_sum, left: t_sq, right: x, meta: 'CHAOS_OPAQUE_SUM' });
+                result.push({ op: 'MOD', target: t_mod, left: t_sum, right: 2, meta: 'CHAOS_OPAQUE_MOD' });
+                result.push({ op: 'EQUALS', target: t_cond, left: t_mod, right: 0 });
+                result.push({
+                    op: 'IF',
+                    test: t_cond,
+                    consequent: [instr],
+                    alternate: [{ op: 'NOOP', meta: 'Dead Branch' }],
+                    meta: 'CHAOS_OPAQUE_PREDICATE'
+                });
+
+                budget.instructionsAdded += 5;
+                addTransform('Opaque Predicate', 'chaos.control_flow.opaque', 'CHAOS_OPAQUE_PRED', {
+                    block: blockId,
+                    invariant: '(x*x + x) % 2 == 0',
+                    cond: '(x*x+x)%2==0',
+                    valueBased: false
+                });
+                return;
+            }
+
+            // ----------------------------------------------------------------
+            // 4. Control Flow Flattening (Lite)
+            // ----------------------------------------------------------------
+            if (seededRandom() < w.flatten && instr.op === 'ASSIGN') {
+                // NEGATIVE PATH: Control depth exceeded
+                if (!checkBudget('control', 1)) {
+                    diagnostics.emit('CHAOS_SKIPPED_DEPTH', 'chaos.safety', 'warning', {
+                        reason: 'control_depth_exceeded',
+                        block: blockId
+                    });
+                    result.push(instr);
+                    return;
+                }
+
+                result.push({
+                    op: 'WHILE',
+                    test: 1,
+                    body: [
+                        instr,
+                        { op: 'BREAK', meta: 'Flattening Break' }
+                    ],
+                    meta: 'CHAOS_CF_FLATTENING_LITE'
+                });
+                budget.instructionsAdded += 2;
+                budget.instructionsAdded += 2;
+                addTransform('CF Flattening', 'chaos.control_flow.flatten', 'CHAOS_CF_FLATTEN', { block: blockId, type: 'loop_switch_lite', reason: 'straight_line_hidden' });
+                return;
+            }
+
+            // Handle nested blocks (recursively with depth tracking)
+            if (instr.consequent) instr.consequent = processBlock(instr.consequent, `if_${idx}`, depth + 1);
+            if (instr.alternate) instr.alternate = processBlock(instr.alternate, `else_${idx}`, depth + 1);
+            if (instr.body) instr.body = processBlock(instr.body, `while_${idx}`, depth + 1);
+
+            // ----------------------------------------------------------------
+            // 5. Commutativity Swap (algebraic identity)
+            // ----------------------------------------------------------------
+            if (['ADD', 'MUL'].includes(instr.op) && seededRandom() < w.subst) {
+                const oldLeft = instr.left;
+                instr.left = instr.right;
+                instr.right = oldLeft;
+                instr.meta = 'Swapped';
+                addTransform('Commutativity Swap', 'chaos.algebraic', 'CHAOS_ALGEBRAIC_SWAP', { op: instr.op });
+            }
+
+            result.push(instr);
+        });
+        return result;
+    };
+
+    const finalIr = processBlock(chaoticIr);
+    if (ir['functions']) finalIr['functions'] = ir['functions'];
+
+    // Emit budget summary
+    diagnostics.emit('CHAOS_BUDGET_SUMMARY', 'chaos.budget', 'info', {
+        instructionsAdded: budget.instructionsAdded,
+        maxInstructions: CHAOS_LIMITS.maxNewInstructions,
+        controlDepth: budget.controlDepth,
+        encodingOps: budget.encodingOps
     });
 
-    // 3. NOOP injection (High only)
-    if (intensity === 'high') {
-        const finalIr = [];
-        chaoticIr.forEach(instr => {
-            finalIr.push(instr);
-            if (Math.random() > 0.6) {
-                finalIr.push({ op: 'NOOP', meta: 'Chaos Injection' });
-                if (!transforms.includes('Injected NOOP')) transforms.push('Injected NOOP');
-            }
-        });
-        return { ir: finalIr, transforms };
-    }
-
-    return { ir: chaoticIr, transforms };
+    return {
+        ir: finalIr,
+        transforms: transforms.map(t => `${t.name} (${t.count})`),
+        seed,
+        budget
+    };
 };
+
+// ============================================================================
+// IR EXECUTOR
+// ============================================================================
 
 export const executeIR = (ir, state = {}, stdout = [], functions = null, isNestedCall = false) => {
     let output = null;
     let returnValue = null;
-    
-    // Extract functions from IR if available
-    if (!functions && ir.functions) {
-        functions = ir.functions;
+
+    if (!functions && ir['functions']) {
+        functions = ir['functions'];
     }
 
     const resolve = (val) => {
         if (typeof val === 'number') return val;
         if (state.hasOwnProperty(val)) return state[val];
-        // Handle constant string patterns or return the string literal itself
         if (typeof val === 'string' && val.startsWith('"') && val.endsWith('"')) {
             return val.slice(1, -1);
         }
@@ -164,6 +451,18 @@ export const executeIR = (ir, state = {}, stdout = [], functions = null, isNeste
             case 'MUL':
                 state[instr.target] = resolve(instr.left) * resolve(instr.right);
                 break;
+            case 'XOR':
+                state[instr.target] = resolve(instr.left) ^ resolve(instr.right);
+                break;
+            case 'AND':
+                state[instr.target] = resolve(instr.left) & resolve(instr.right);
+                break;
+            case 'MOD':
+                state[instr.target] = resolve(instr.left) % resolve(instr.right);
+                break;
+            case 'EQUALS':
+                state[instr.target] = resolve(instr.left) == resolve(instr.right) ? 1 : 0;
+                break;
             case 'DIV':
                 const l = resolve(instr.left);
                 const r = resolve(instr.right) || 1;
@@ -176,6 +475,10 @@ export const executeIR = (ir, state = {}, stdout = [], functions = null, isNeste
             case 'GREATER':
                 state[instr.target] = resolve(instr.left) > resolve(instr.right) ? 1 : 0;
                 break;
+            case 'BREAK':
+                return 'BREAK';
+            case 'NOOP':
+                break;
             case 'IF':
                 if (resolve(instr.test)) {
                     executeIR(instr.consequent, state, stdout, functions, isNestedCall);
@@ -185,8 +488,9 @@ export const executeIR = (ir, state = {}, stdout = [], functions = null, isNeste
                 break;
             case 'WHILE':
                 let iterations = 0;
-                while (resolve(instr.test) && iterations < 1000) { // Safety break
-                    executeIR(instr.body, state, stdout, functions, isNestedCall);
+                while (resolve(instr.test) && iterations < 1000) {
+                    const res = executeIR(instr.body, state, stdout, functions, true);
+                    if (res === 'BREAK') break;
                     iterations++;
                 }
                 break;
@@ -199,17 +503,14 @@ export const executeIR = (ir, state = {}, stdout = [], functions = null, isNeste
                 state[instr.target][resolve(instr.index)] = resolve(instr.value);
                 break;
             case 'CALL':
-                // Handle printf
                 if (instr.name === 'printf') {
                     const resolvedArgs = instr.args.map(a => resolve(a));
                     let msg = resolvedArgs[0];
                     if (typeof msg === 'string') {
                         let argIndex = 1;
-                        // Replace %d, %f, %.nf etc.
-                        msg = msg.replace(/%(\.?\d*)?([dfs])/g, (match, precision, type) => {
+                        msg = msg.replace(/%(\\.?\\d*)?([dfs])/g, (match, precision, type) => {
                             let val = resolvedArgs[argIndex++];
                             if (val === undefined) return match;
-
                             if (type === 'f') {
                                 if (precision && precision.startsWith('.')) {
                                     const p = parseInt(precision.slice(1));
@@ -226,32 +527,24 @@ export const executeIR = (ir, state = {}, stdout = [], functions = null, isNeste
                     }
                     state[instr.target] = 0;
                 } else if (functions && functions[instr.name]) {
-                    // Execute user-defined function
                     const func = functions[instr.name];
                     const funcState = {};
-                    
-                    // Map arguments to parameters
                     const resolvedArgs = instr.args.map(a => resolve(a));
                     if (func.params) {
                         func.params.forEach((param, i) => {
                             funcState[param.id] = resolvedArgs[i] !== undefined ? resolvedArgs[i] : 0;
                         });
                     }
-                    
-                    // Generate IR for function body
                     const funcIR = [];
                     func.body.forEach(stmt => generateIR(stmt, funcIR, functions));
-                    
                     const result = executeIR(funcIR, funcState, [], functions, true);
                     state[instr.target] = typeof result === 'number' ? result : 0;
                 } else {
-                    state[instr.target] = 0; // Unknown function
+                    state[instr.target] = 0;
                 }
                 break;
             case 'RETURN':
                 returnValue = resolve(instr.value);
-                // For nested function calls, return immediately to pass value back
-                // For main, continue to collect all stdout first
                 if (isNestedCall) {
                     return returnValue;
                 }

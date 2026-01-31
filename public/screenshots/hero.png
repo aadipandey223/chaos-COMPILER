@@ -1,0 +1,6 @@
+<svg width="800" height="400" xmlns="http://www.w3.org/2000/svg">
+  <rect width="800" height="400" fill="#0f172a" />
+  <rect x="50" y="50" width="700" height="300" rx="15" fill="#1e293b" stroke="#334155" stroke-width="2" />
+  <text x="400" y="200" font-family="Arial" font-size="24" fill="#94a3b8" text-anchor="middle">Chaos Compiler UI</text>
+  <text x="400" y="230" font-family="Arial" font-size="14" fill="#64748b" text-anchor="middle">(Run the app to see the real interface)</text>
+</svg>

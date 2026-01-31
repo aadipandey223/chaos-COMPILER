@@ -1,0 +1,7 @@
+<svg width="800" height="400" xmlns="http://www.w3.org/2000/svg">
+  <rect width="800" height="400" fill="#0f172a" />
+  <rect x="50" y="50" width="340" height="300" rx="10" fill="#1e293b" stroke="#334155" />
+  <rect x="410" y="50" width="340" height="300" rx="10" fill="#1e293b" stroke="#8b5cf6" />
+  <text x="220" y="200" font-family="Arial" font-size="20" fill="#94a3b8" text-anchor="middle">Original IR</text>
+  <text x="580" y="200" font-family="Arial" font-size="20" fill="#a78bfa" text-anchor="middle">Chaotic IR</text>
+</svg>

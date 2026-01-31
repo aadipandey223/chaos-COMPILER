@@ -1,102 +1,124 @@
-# 🌀 The Chaos Compiler
-### Controlled Non-Deterministic Code Obfuscation & Polymorphic Compilation
+# Chaos Compiler
 
-[![Vite](https://img.shields.io/badge/Vite-B73BFE?style=for-the-badge&logo=vite&logoColor=FFD62E)](https://vitejs.dev/)
-[![React](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)](https://reactjs.org/)
-[![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](https://opensource.org/licenses/MIT)
+**IR-level chaos compiler framework with validation-gated diagnostics.**
 
-**Chaos Compiler** is a unique research project and compilation framework designed to explore **Polymorphic Code Generation**. It takes standard C-like source code and produces functional Assembly output that is mathematically verified to be identical in behavior but radically different in binary signature every time it is compiled.
+<p align="center">
+  <img src="./public/screenshots/hero.png" alt="Chaos Compiler UI" width="100%">
+</p>
 
----
+## Overview
 
-## ✨ Key Features
+Chaos Compiler is an educational compiler front-end and IR-level transformation framework; it does not generate native binaries. It performs **semantic-preserving transformations** at the Intermediate Representation (IR) level. It operates entirely in the browser, compiling C code to an internal IR, identifying opportunities for obfuscation, and generating assembly output.
 
-- 🧬 **Polymorphic Engine:** Generates unique binary signatures for the same functional behavior using non-deterministic IR transformations.
-- 🎨 **visual Pipeline:** A real-time, step-by-step visualization of the compilation process:
-  - **Lexer & Parser:** Highlighting tokenization and AST construction.
-  - **Chaos Layer:** Visualizing instruction shuffling, dead-code insertion, and register swapping.
-  - **Verification:** Automated equivalence checking between "clean" and "chaotic" builds.
-- 🌳 **Interactive Parse Tree:** A dynamic, hierarchical view of the Abstract Syntax Tree (AST), exported as high-quality PNGs.
-- 🧪 **Intensity Control:** Adjustable "Chaos Intensity" levels (None, Low, Medium, High) to control the degree of mutation.
-- 📜 **Signature History:** Track and compare the hexadecimal signatures of multiple runs to verify polymorphism.
+## Why This Project Exists
 
----
+Most obfuscation tools act as black boxes. Chaos Compiler is designed to make obfuscation *visible*, *explainable*, and *verifiable* at the IR level, so developers and researchers can understand how chaos affects program structure without breaking semantics.
 
-## 🛠️ Technology Stack
+The goal is to demonstrate how compiler-level obfuscation works by making the transformations inspectable and explainable.
 
-- **Frontend:** React 18, Vite, Tailwind CSS
-- **Animations:** Framer Motion
-- **Editor:** React Simple Code Editor + PrismJS (C/C++ Highlighting)
-- **Visualization:** Lucide Icons, html2canvas
-- **Compiler Core:** 
-  - **JavaScript Implementation:** For real-time browser execution.
-  - **Native C Implementation:** Found in `src/compiler/` for reference and CLI-based benchmarks.
+**Key Features:**
+*   **Structured IR**: Operates on an AST-based intermediate representation.
+*   **Semantic Preservation**: Transformations do not alter the program's observable behavior.
+*   **Validation Gate**: Integration with **Lingo.dev** to enforce diagnostic schemas and terminology.
+*   **Inspectability**: Tools to visualize the difference between original and transformed IR.
 
 ---
 
-## 🏗️ Project Structure
+## Architecture
 
-```text
-chaos-COMPILER/
-├── src/
-│   ├── compiler/          # THE CORE ENGINE
-│   │   ├── lexer.js/c/h    # Tokenizer
-│   │   ├── parser.js/c/h   # AST Generator
-│   │   ├── ir.js/h         # Intermediate Representation
-│   │   ├── chaos.c/h       # Polymorphic Mutation Engine
-│   │   └── codegen.js/c/h  # Assembly Generator
-│   ├── components/        # React UI Components
-│   │   └── ParseTree.jsx   # Recursive AST Visualizer
-│   └── App.jsx            # Main Application Logic
-├── tailwind.config.js     # Styling Configuration
-└── package.json           # Dependencies
+The system follows a standard pipeline architecture:
+
+```mermaid
+graph TD
+    A[Source Code (C)] --> B[Parser & IR Generator]
+    B --> C[Chaos Engine (Transformations)]
+    C --> D[Diagnostic Generator (MCP)]
+    D --> E[Lingo.dev Validation]
+    E --> F[UI Rendering]
 ```
 
----
+### Components
 
-## 🚀 Getting Started
-
-### Prerequisites
-- [Node.js](https://nodejs.org/) (v16+)
-- [npm](https://www.npmjs.com/)
-
-### Installation
-1. Clone the repository:
-   ```powershell
-   git clone https://github.com/aadipandey223/chaos-COMPILER.git
-   cd chaos-COMPILER
-   ```
-
-2. Install dependencies:
-   ```powershell
-   npm install
-   ```
-
-3. Start the development server:
-   ```powershell
-   npm run dev
-   ```
+*   **Chaos Engine**: Selects and applies obfuscation strategies based on an intensity parameter.
+*   **MCP (Model Context Provider)**: Generates human-readable explanations for each transformation. Treated as an untrusted source.
+*   **Lingo.dev**: Validates diagnostic objects against a defined schema and glossary. Acts as a build blocker if validation fails.
+*   **Explanation Modes**: Student and Researcher modes control how transformations are explained, not how they are executed.
 
 ---
 
-## 🔬 How it Works
+## Transformations
 
-1. **Analysis:** The Lexer and Parser turn your C code into a "Clean IR" (Intermediate Representation).
-2. **Mutation:** The Chaos Engine applies random but "behavior-preserving" transformations:
-   - **Instruction Shuffling:** Reordering operations that don't depend on each other.
-   - **Opaque Predicates:** Adding complex-looking logic that always evaluates to a known value.
-   - **No-Op Injection:** Inserting "junk" instructions that don't change state.
-3. **Verification:** The "clean" result and "chaotic" result are compared in a virtual execution environment to ensure 1:1 functional parity.
-4. **Export:** The system generates valid assembly code and a unique binary fingerprint.
+The compiler implements the following obfuscation techniques:
+
+### 1. Instruction Substitution
+Replaces arithmetic operations with algebraically equivalent bitwise sequences.
+*   Example: `a + b` → `(a ^ b) + 2 * (a & b)`
+
+### 2. Opaque Predicates
+Injects conditional branches that always evaluate to true but are difficult to determine statically.
+*   Invariant: `(x*x + x) % 2 == 0` (always true for integers).
+
+### 3. Control-Flow Flattening
+Encapsulates linear code blocks within a dispatcher loop to obscure the execution path.
+
+### 4. Number Encoding
+Replaces integer constants with arithmetic expressions.
+*   Example: `5` → `(5 + k) - k`
+
+<p align="center">
+  <img src="./public/screenshots/ir_diff.png" alt="IR Diff View" width="80%">
+  <br>
+  <em>IR Diff View</em>
+</p>
 
 ---
 
-## 🤝 Contributing
-Contributions are welcome! If you have ideas for new chaos transformations or UI improvements, please open an issue or submit a pull request.
+## Integration Details
 
-## 📄 License
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+### Lingo.dev
+This project uses Lingo.dev strictly for **validation**. It enforces:
+*   **Schema**: Required fields (`id`, `context`, `severity`).
+*   **Vocabulary**: Adherence to defined compiler terminology.
+
+If a diagnostic fails validation, the build process flags it, ensuring no unverified information is presented to the user. Lingo.dev acts as a hard validation gate in the pipeline; if validation fails, diagnostics are blocked from rendering. **This project uses Lingo.dev Compiler for validation only; no translation or localization APIs are invoked.**
+
+### MCP (Untrusted Layer)
+The MCP layer generates the explanatory text for transformations. To prevent hallucinations or incorrect terminology, all MCP output flows through the Lingo validation gate before rendering.
 
 ---
-Created with 🌪️ by **Antigravity AI**
+
+## Scope & Limitations
+
+*   **Browser Environment**: constrained by browser memory and execution limits.
+*   **Language Support**: Supports a subset of C suitable for educational demonstrations.
+*   **Mocked Features**: `sizeof` is mocked to a fixed width (4 bytes).
+*   **Intended Use**: Educational visualization and small-scale obfuscation research.
+
+---
+
+## Quick Start
+
+1.  Open the application in a modern browser.
+2.  Paste a small C program into the editor.
+3.  Select a chaos intensity level.
+4.  Apply chaos and inspect the IR diff and diagnostics.
+
+---
+
+## 🔬 Validation Failure Simulation (Testing Mode)
+
+Chaos Compiler includes an explicit failure simulation mode to demonstrate the authority of the Lingo.dev Compiler.
+
+When a failure mode is selected (e.g., "Missing Severity"):
+1.  **Auditable Injection**: The backend intentionally injects a malformed diagnostic JSON into the diagnostic stream.
+2.  **Deterministic Validation**: This malformed diagnostic is passed through the standard Lingo validation pipeline.
+3.  **Visible Enforcement**: The UI provides a side-by-side preview of the **Injected Json** vs. the **Lingo Validation Errors**, proving exactly what Lingo is rejecting.
+4.  **Hardware-Level Block**: If validation fails, the system marks the build as invalid and suppresses all generative (MCP) content.
+
+This mode proves that AI-generated content is treated as untrusted until verified by Lingo.dev's rule-based authority.
+
+---
+
+## License
+
+MIT
