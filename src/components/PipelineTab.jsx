@@ -55,7 +55,7 @@ const components = [
 
 const mainPipeline = ['parser', 'ir', 'chaos', 'lingo', 'codegen'];
 
-export const AgentsTab = () => {
+export const PipelineTab = () => {
     return (
         <div className="max-w-6xl mx-auto p-4 sm:p-6 space-y-6 sm:space-y-10">
             {/* Header */}

@@ -37,6 +37,26 @@ graph TD
     E --> F[UI Rendering]
 ```
 
+### Directory Structure
+
+```
+chaos-COMPILER/
+├── src/
+│   ├── compiler/          # Core compiler components
+│   │   ├── lexer.js       # Tokenization
+│   │   ├── parser.js      # AST generation
+│   │   ├── ir.js          # IR generation & transformations
+│   │   ├── codegen.js     # Assembly generation
+│   │   ├── diagnostics.js # Diagnostic system
+│   │   ├── lingo.js       # Lingo validation
+│   │   └── __tests__/     # Test suite
+│   ├── components/        # React UI components
+│   └── test/              # Test configuration
+├── reference-implementations/ # C reference code (not used in production)
+├── examples/              # Example C programs
+└── public/                # Static assets
+```
+
 ### Components
 
 *   **Chaos Engine**: Selects and applies obfuscation strategies based on an intensity parameter.
@@ -98,10 +118,51 @@ The MCP layer generates the explanatory text for transformations. To prevent hal
 
 ## Quick Start
 
+### Development
+
+```bash
+# Install dependencies
+npm install
+
+# Start development server
+npm run dev
+
+# Run tests
+npm test
+
+# Run tests with UI
+npm run test:ui
+
+# Generate coverage report
+npm run test:coverage
+
+# Build for production
+npm build
+```
+
+### Using the Application
+
 1.  Open the application in a modern browser.
-2.  Paste a small C program into the editor.
-3.  Select a chaos intensity level.
-4.  Apply chaos and inspect the IR diff and diagnostics.
+2.  Try a **Demo Preset**: Click "Arithmetic Chaos", "Control Flow Chaos", or "Heavy Obfuscation"
+3.  Paste a small C program into the editor (or use the provided example).
+4.  Select a chaos intensity level (Low, Medium, High).
+5.  Click **"Apply Chaos"** and inspect:
+    - **IR Diff View**: See transformations in real-time
+    - **Diagnostics Panel**: AI-generated explanations (validated by Lingo)
+    - **Execution Output**: Verify semantic preservation
+6.  **Experiment** with custom rules in the Orchestration tab
+7.  **Save** your configurations for later use
+
+### Demo Features
+
+- **Quick Presets**: One-click configurations for common obfuscation patterns
+- **Save/Load System**: Preserve and share your custom rule configurations
+- **Hit Count Tracking**: See exactly how many times each rule was applied
+- **Reset Button**: Instantly return to default configuration
+
+### Testing
+
+See [TESTING.md](TESTING.md) for comprehensive testing documentation.
 
 ---
 

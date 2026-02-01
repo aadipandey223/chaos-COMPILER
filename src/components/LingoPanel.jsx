@@ -35,7 +35,7 @@ export const LingoPanel = ({ diagnostics, lingoReport, mode, setMode, simulateEr
                 <div className="flex items-center gap-3">
                     <div className="flex items-center gap-2 text-slate-400">
                         <ShieldCheck size={18} className="text-lingo" />
-                        <span className="text-xs sm:text-sm font-semibold uppercase tracking-wider">Lingo Gate</span>
+                        <span className="text-xs sm:text-sm font-semibold uppercase tracking-wider">Transformations & Explanations</span>
                     </div>
                 </div>
 

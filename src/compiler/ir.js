@@ -180,25 +180,32 @@ const generateExpressionIR = (node, ir, functions) => {
 // CHAOS ENGINE (with Budget, Seeded RNG, and Negative Paths)
 // ============================================================================
 
-export const applyChaos = (ir, intensity = 'medium', seed = Date.now()) => {
+export const applyChaos = (ir, intensity = 'medium', seed = Date.now(), config = null) => {
     if (intensity === 'none') {
         diagnostics.emit('CHAOS_SKIPPED_DISABLED', 'chaos.safety', 'info', { reason: 'intensity_none' });
-        return { ir: [...ir], transforms: [], seed };
+        return { ir: [...ir], snapshots: [{ name: 'Original', ir: [...ir] }], transforms: [], seed };
     }
 
-    // Initialize seed for reproducibility
+    // Default config if not provided
+    const defaultConfig = {
+        passes: {
+            numberEncoding: true,
+            substitution: true,
+            opaquePredicates: true,
+            flattening: true
+        },
+        customRules: []
+    };
+    const activeConfig = config || defaultConfig;
+
     setSeed(seed);
-
-    // Generate specific plan for this run
     const plan = generateChaosPlan(ir, intensity, seed);
-
-    // Emit selection event
     diagnostics.emit('CHAOS_PLAN_SELECTED', 'chaos.planner', 'info', { strategy: plan.theme, intensity, seed });
 
-    const chaoticIr = JSON.parse(JSON.stringify(ir));
+    let currentIr = JSON.parse(JSON.stringify(ir));
+    const snapshots = [{ name: 'Original', ir: JSON.parse(JSON.stringify(currentIr)) }];
     const transforms = [];
 
-    // Budget tracking
     let budget = {
         instructionsAdded: 0,
         controlDepth: 0,
@@ -216,204 +223,199 @@ export const applyChaos = (ir, intensity = 'medium', seed = Date.now()) => {
 
     const checkBudget = (type, cost = 1) => {
         if (type === 'instructions' && budget.instructionsAdded + cost > CHAOS_LIMITS.maxNewInstructions) {
+            diagnostics.emit('CHAOS_BUDGET_EXHAUSTED', 'chaos.budget.limit', 'warning', 
+                { type: 'instructions', limit: CHAOS_LIMITS.maxNewInstructions, current: budget.instructionsAdded });
             return false;
         }
         if (type === 'control' && budget.controlDepth + cost > CHAOS_LIMITS.maxControlDepth) {
+            diagnostics.emit('CHAOS_BUDGET_EXHAUSTED', 'chaos.budget.limit', 'warning', 
+                { type: 'control', limit: CHAOS_LIMITS.maxControlDepth, current: budget.controlDepth });
             return false;
         }
         if (type === 'encoding' && budget.encodingOps + cost > CHAOS_LIMITS.maxEncodingOps) {
+            diagnostics.emit('CHAOS_BUDGET_EXHAUSTED', 'chaos.budget.limit', 'warning', 
+                { type: 'encoding', limit: CHAOS_LIMITS.maxEncodingOps, current: budget.encodingOps });
             return false;
         }
         return true;
     };
 
-    const processBlock = (block, blockId = 'main', depth = 0) => {
-        const result = [];
-        budget.controlDepth = Math.max(budget.controlDepth, depth);
+    // --- Pass 1: Number Encoding ---
+    if (activeConfig.passes.numberEncoding) {
+        const pass1 = (block, bId = 'main', d = 0) => {
+            const res = [];
+            block.forEach((instr, idx) => {
+                if (plan.weights.number_encoding > 0 && seededRandom() < plan.weights.number_encoding &&
+                    instr.op === 'ASSIGN' && typeof instr.value === 'number' && Number.isInteger(instr.value)) {
+                    if (checkBudget('encoding', 2)) {
+                        const val = instr.value;
+                        const offset = Math.floor(seededRandom() * 10) + 1;
+                        const t1 = `enc_add_${idx}_${d}`;
+                        res.push({ op: 'ADD', target: t1, left: val, right: offset, meta: 'CHAOS_NUM_ENC_ADD' });
+                        res.push({ op: 'SUB', target: instr.target, left: t1, right: offset, meta: 'CHAOS_NUM_ENC_SUB' });
+                        budget.instructionsAdded += 2;
+                        budget.encodingOps += 1;
+                        addTransform('Number Encoding', 'chaos.data.encoding', 'CHAOS_NUM_ENCODING', { orig: val, enc: `${t1} - ${offset}` });
+                        return;
+                    }
+                }
+                if (instr.consequent) instr.consequent = pass1(instr.consequent, `if_${idx}`, d + 1);
+                if (instr.alternate) instr.alternate = pass1(instr.alternate, `else_${idx}`, d + 1);
+                if (instr.body) instr.body = pass1(instr.body, `while_${idx}`, d + 1);
+                res.push(instr);
+            });
+            return res;
+        };
+        currentIr = pass1(currentIr);
+        snapshots.push({ name: 'Number Encoding', ir: JSON.parse(JSON.stringify(currentIr)) });
+    }
 
-        block.forEach((instr, idx) => {
-            const w = plan.weights;
+    // --- Pass 2: Instruction Substitution ---
+    if (activeConfig.passes.substitution) {
+        const pass2 = (block, bId = 'main', d = 0) => {
+            const res = [];
+            block.forEach((instr, idx) => {
+                if (instr.op === 'ADD' && seededRandom() < plan.weights.subst) {
+                    if (instr.left !== 0 && instr.right !== 0 && checkBudget('instructions', 4)) {
+                        const t1 = `chaos_xor_${idx}_${d}`;
+                        const t2 = `chaos_and_${idx}_${d}`;
+                        const t3 = `chaos_mul_${idx}_${d}`;
+                        res.push({ op: 'XOR', target: t1, left: instr.left, right: instr.right, meta: 'CHAOS_SUBST_XOR' });
+                        res.push({ op: 'AND', target: t2, left: instr.left, right: instr.right, meta: 'CHAOS_SUBST_AND' });
+                        res.push({ op: 'MUL', target: t3, left: t2, right: 2, meta: 'CHAOS_SUBST_MUL' });
+                        res.push({ op: 'ADD', target: instr.target, left: t1, right: t3, meta: 'CHAOS_SUBST_FINAL' });
+                        budget.instructionsAdded += 4;
+                        addTransform('Instruction Substitution', 'chaos.substitution', 'CHAOS_SUBST_ADD', { block: bId, op: 'ADD' });
+                        return;
+                    }
+                }
+                if (instr.consequent) instr.consequent = pass2(instr.consequent, `if_${idx}`, d + 1);
+                if (instr.alternate) instr.alternate = pass2(instr.alternate, `else_${idx}`, d + 1);
+                if (instr.body) instr.body = pass2(instr.body, `while_${idx}`, d + 1);
+                res.push(instr);
+            });
+            return res;
+        };
+        currentIr = pass2(currentIr);
+        snapshots.push({ name: 'Substitution', ir: JSON.parse(JSON.stringify(currentIr)) });
+    }
 
-            // ----------------------------------------------------------------
-            // 1. Number Encoding (with budget check)
-            // ----------------------------------------------------------------
-            if (seededRandom() < w.number_encoding &&
-                instr.op === 'ASSIGN' &&
-                typeof instr.value === 'number' &&
-                Number.isInteger(instr.value)) {
+    // --- Pass 3: Opaque Predicates ---
+    if (activeConfig.passes.opaquePredicates) {
+        const pass3 = (block, bId = 'main', d = 0) => {
+            const res = [];
+            block.forEach((instr, idx) => {
+                if (seededRandom() < plan.weights.opaque && instr.op === 'ASSIGN') {
+                    if (checkBudget('control', 1)) {
+                        const t_sq = `opaque_sq_${idx}_${d}`;
+                        const t_sum = `opaque_sum_${idx}_${d}`;
+                        const t_mod = `opaque_mod_${idx}_${d}`;
+                        const t_cond = `opaque_cond_${idx}_${d}`;
+                        const x = typeof instr.value === 'number' ? instr.value : 1;
+                        res.push({ op: 'MUL', target: t_sq, left: x, right: x, meta: 'CHAOS_OPAQUE_SQ' });
+                        res.push({ op: 'ADD', target: t_sum, left: t_sq, right: x, meta: 'CHAOS_OPAQUE_SUM' });
+                        res.push({ op: 'MOD', target: t_mod, left: t_sum, right: 2, meta: 'CHAOS_OPAQUE_MOD' });
+                        res.push({ op: 'EQUALS', target: t_cond, left: t_mod, right: 0 });
+                        res.push({ op: 'IF', test: t_cond, consequent: [instr], alternate: [{ op: 'NOOP', meta: 'Dead Branch' }], meta: 'CHAOS_OPAQUE_PREDICATE' });
+                        budget.instructionsAdded += 5;
+                        addTransform('Opaque Predicate', 'chaos.control_flow.opaque', 'CHAOS_OPAQUE_PRED', { block: bId });
+                        return;
+                    }
+                }
+                if (instr.consequent) instr.consequent = pass3(instr.consequent, `if_${idx}`, d + 1);
+                if (instr.alternate) instr.alternate = pass3(instr.alternate, `else_${idx}`, d + 1);
+                if (instr.body) instr.body = pass3(instr.body, `while_${idx}`, d + 1);
+                res.push(instr);
+            });
+            return res;
+        };
+        currentIr = pass3(currentIr);
+        snapshots.push({ name: 'Opaque Predicates', ir: JSON.parse(JSON.stringify(currentIr)) });
+    }
 
-                // Check budget constraints
-                if (!checkBudget('encoding', 2)) {
-                    diagnostics.emit('CHAOS_SKIPPED_BUDGET', 'chaos.safety', 'warning', {
-                        reason: 'encoding_budget_exceeded',
-                        block: blockId
+    // --- Pass 4: Control flow Flattening ---
+    if (activeConfig.passes.flattening) {
+        const pass4 = (block, bId = 'main', d = 0) => {
+            const res = [];
+            block.forEach((instr, idx) => {
+                if (seededRandom() < plan.weights.flatten && instr.op === 'ASSIGN') {
+                    if (checkBudget('control', 1)) {
+                        res.push({ op: 'WHILE', test: 1, body: [instr, { op: 'BREAK', meta: 'Flattening Break' }], meta: 'CHAOS_CF_FLATTENING_LITE' });
+                        budget.instructionsAdded += 2;
+                        addTransform('CF Flattening', 'chaos.control_flow.flatten', 'CHAOS_CF_FLATTEN', { block: bId });
+                        return;
+                    }
+                }
+                if (instr.consequent) instr.consequent = pass4(instr.consequent, `if_${idx}`, d + 1);
+                if (instr.alternate) instr.alternate = pass4(instr.alternate, `else_${idx}`, d + 1);
+                if (instr.body) instr.body = pass4(instr.body, `while_${idx}`, d + 1);
+                res.push(instr);
+            });
+            return res;
+        };
+        currentIr = pass4(currentIr);
+        snapshots.push({ name: 'Final IR (Flattening)', ir: JSON.parse(JSON.stringify(currentIr)) });
+    }
+
+    // --- Pass 5: Custom Mutation Rules ---
+    const ruleHits = {};
+    if (activeConfig.customRules.length > 0) {
+        const pass5 = (block) => {
+            const res = [];
+            block.forEach((instr, idx) => {
+                const rule = activeConfig.customRules.find(r => r.source === instr.op);
+                if (rule) {
+                    ruleHits[rule.id] = (ruleHits[rule.id] || 0) + 1;
+                    const ops = rule.target.split(',').map(s => s.trim());
+                    ops.forEach((op, oIdx) => {
+                        const isFinal = oIdx === ops.length - 1;
+                        const newInstr = {
+                            op,
+                            target: isFinal ? instr.target : `custom_${instr.target}_${idx}_${oIdx}`,
+                            meta: `CUSTOM_RULE_${rule.source}`
+                        };
+
+                        // Heuristic: map inputs if possible
+                        if (instr.left !== undefined) newInstr.left = instr.left;
+                        if (instr.right !== undefined) newInstr.right = instr.right;
+                        if (instr.value !== undefined) newInstr.value = instr.value;
+
+                        res.push(newInstr);
+                        budget.instructionsAdded++;
                     });
-                    result.push(instr);
+                    addTransform('Custom Mutation', 'chaos.custom', 'CHAOS_CUSTOM_MUTATION', { op: instr.op });
                     return;
                 }
 
-                const val = instr.value;
-                const offset = Math.floor(seededRandom() * 10) + 1;
-                const t1 = `enc_add_${idx}`;
+                if (instr.consequent) instr.consequent = pass5(instr.consequent);
+                if (instr.alternate) instr.alternate = pass5(instr.alternate);
+                if (instr.body) instr.body = pass5(instr.body);
+                res.push(instr);
+            });
+            return res;
+        };
+        currentIr = pass5(currentIr);
+        snapshots.push({ name: 'Custom Mutations', ir: JSON.parse(JSON.stringify(currentIr)) });
+    }
 
-                result.push({ op: 'ADD', target: t1, left: val, right: offset, meta: 'CHAOS_NUM_ENC_ADD' });
-                result.push({ op: 'SUB', target: instr.target, left: t1, right: offset, meta: 'CHAOS_NUM_ENC_SUB' });
+    if (ir['functions']) currentIr['functions'] = ir['functions'];
 
-                budget.instructionsAdded += 2;
-                budget.encodingOps += 1;
-                addTransform('Number Encoding', 'chaos.data.encoding', 'CHAOS_NUM_ENCODING', { orig: val, enc: `${t1} - ${offset}`, strategy: 'offset' });
-                return;
-            }
-
-            // ----------------------------------------------------------------
-            // 2. Instruction Substitution (ADD -> XOR/AND chain)
-            // ----------------------------------------------------------------
-            if (instr.op === 'ADD' && seededRandom() < w.subst) {
-                // NEGATIVE PATH: Skip if division involved (potential UB)
-                if (instr.left === 0 || instr.right === 0) {
-                    diagnostics.emit('CHAOS_SKIPPED_SAFETY', 'chaos.safety', 'warning', {
-                        reason: 'zero_operand',
-                        block: blockId
-                    });
-                    result.push(instr);
-                    return;
-                }
-
-                // NEGATIVE PATH: Budget check
-                if (!checkBudget('instructions', 4)) {
-                    diagnostics.emit('CHAOS_SKIPPED_BUDGET', 'chaos.safety', 'warning', {
-                        reason: 'instruction_budget_exceeded',
-                        block: blockId
-                    });
-                    result.push(instr);
-                    return;
-                }
-
-                const t1 = `chaos_xor_${idx}`;
-                const t2 = `chaos_and_${idx}`;
-                const t3 = `chaos_mul_${idx}`;
-
-                result.push({ op: 'XOR', target: t1, left: instr.left, right: instr.right, meta: 'CHAOS_SUBST_XOR' });
-                result.push({ op: 'AND', target: t2, left: instr.left, right: instr.right, meta: 'CHAOS_SUBST_AND' });
-                result.push({ op: 'MUL', target: t3, left: t2, right: 2, meta: 'CHAOS_SUBST_MUL' });
-                result.push({ op: 'ADD', target: instr.target, left: t1, right: t3, meta: 'CHAOS_SUBST_FINAL' });
-
-                budget.instructionsAdded += 4;
-                addTransform('Instruction Substitution', 'chaos.substitution', 'CHAOS_SUBST_ADD', { block: blockId, instr: idx, left: instr.left, right: instr.right, op: 'ADD' });
-                return;
-            }
-
-            // ----------------------------------------------------------------
-            // 3. Opaque Predicate
-            // ----------------------------------------------------------------
-            if (seededRandom() < w.opaque && instr.op === 'ASSIGN') {
-                // NEGATIVE PATH: Control depth exceeded
-                if (!checkBudget('control', 1)) {
-                    diagnostics.emit('CHAOS_SKIPPED_DEPTH', 'chaos.safety', 'warning', {
-                        reason: 'control_depth_exceeded',
-                        block: blockId
-                    });
-                    result.push(instr);
-                    return;
-                }
-
-                // VALUE-DEPENDENT OPAQUE PREDICATE: (x*x + x) % 2 == 0 (always true for any integer x)
-                const t_sq = `opaque_sq_${idx}`;
-                const t_sum = `opaque_sum_${idx}`;
-                const t_mod = `opaque_mod_${idx}`;
-                const t_cond = `opaque_cond_${idx}`;
-                const x = typeof instr.value === 'number' ? instr.value : 1;
-
-                result.push({ op: 'MUL', target: t_sq, left: x, right: x, meta: 'CHAOS_OPAQUE_SQ' });
-                result.push({ op: 'ADD', target: t_sum, left: t_sq, right: x, meta: 'CHAOS_OPAQUE_SUM' });
-                result.push({ op: 'MOD', target: t_mod, left: t_sum, right: 2, meta: 'CHAOS_OPAQUE_MOD' });
-                result.push({ op: 'EQUALS', target: t_cond, left: t_mod, right: 0 });
-                result.push({
-                    op: 'IF',
-                    test: t_cond,
-                    consequent: [instr],
-                    alternate: [{ op: 'NOOP', meta: 'Dead Branch' }],
-                    meta: 'CHAOS_OPAQUE_PREDICATE'
-                });
-
-                budget.instructionsAdded += 5;
-                addTransform('Opaque Predicate', 'chaos.control_flow.opaque', 'CHAOS_OPAQUE_PRED', {
-                    block: blockId,
-                    invariant: '(x*x + x) % 2 == 0',
-                    cond: '(x*x+x)%2==0',
-                    valueBased: false
-                });
-                return;
-            }
-
-            // ----------------------------------------------------------------
-            // 4. Control Flow Flattening (Lite)
-            // ----------------------------------------------------------------
-            if (seededRandom() < w.flatten && instr.op === 'ASSIGN') {
-                // NEGATIVE PATH: Control depth exceeded
-                if (!checkBudget('control', 1)) {
-                    diagnostics.emit('CHAOS_SKIPPED_DEPTH', 'chaos.safety', 'warning', {
-                        reason: 'control_depth_exceeded',
-                        block: blockId
-                    });
-                    result.push(instr);
-                    return;
-                }
-
-                result.push({
-                    op: 'WHILE',
-                    test: 1,
-                    body: [
-                        instr,
-                        { op: 'BREAK', meta: 'Flattening Break' }
-                    ],
-                    meta: 'CHAOS_CF_FLATTENING_LITE'
-                });
-                budget.instructionsAdded += 2;
-                budget.instructionsAdded += 2;
-                addTransform('CF Flattening', 'chaos.control_flow.flatten', 'CHAOS_CF_FLATTEN', { block: blockId, type: 'loop_switch_lite', reason: 'straight_line_hidden' });
-                return;
-            }
-
-            // Handle nested blocks (recursively with depth tracking)
-            if (instr.consequent) instr.consequent = processBlock(instr.consequent, `if_${idx}`, depth + 1);
-            if (instr.alternate) instr.alternate = processBlock(instr.alternate, `else_${idx}`, depth + 1);
-            if (instr.body) instr.body = processBlock(instr.body, `while_${idx}`, depth + 1);
-
-            // ----------------------------------------------------------------
-            // 5. Commutativity Swap (algebraic identity)
-            // ----------------------------------------------------------------
-            if (['ADD', 'MUL'].includes(instr.op) && seededRandom() < w.subst) {
-                const oldLeft = instr.left;
-                instr.left = instr.right;
-                instr.right = oldLeft;
-                instr.meta = 'Swapped';
-                addTransform('Commutativity Swap', 'chaos.algebraic', 'CHAOS_ALGEBRAIC_SWAP', { op: instr.op });
-            }
-
-            result.push(instr);
-        });
-        return result;
-    };
-
-    const finalIr = processBlock(chaoticIr);
-    if (ir['functions']) finalIr['functions'] = ir['functions'];
-
-    // Emit budget summary
     diagnostics.emit('CHAOS_BUDGET_SUMMARY', 'chaos.budget', 'info', {
         instructionsAdded: budget.instructionsAdded,
         maxInstructions: CHAOS_LIMITS.maxNewInstructions,
-        controlDepth: budget.controlDepth,
-        encodingOps: budget.encodingOps
+        controlDepth: budget.controlDepth
     });
 
     return {
-        ir: finalIr,
+        ir: currentIr,
+        snapshots,
         transforms: transforms.map(t => `${t.name} (${t.count})`),
         seed,
-        budget
+        budget,
+        ruleHits
     };
 };
+
 
 // ============================================================================
 // IR EXECUTOR

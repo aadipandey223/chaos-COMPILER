@@ -4,8 +4,8 @@ import { Layers, Info } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MCP } from '../compiler/mcp';
 
-export const IRDiffView = ({ originalIr, chaoticIr }) => {
-    // New state to track exact coordinates and content
+export const IRDiffView = ({ snapshots = [] }) => {
+    const [step, setStep] = useState(0);
     const [tooltipState, setTooltipState] = useState({
         visible: false,
         x: 0,
@@ -14,60 +14,32 @@ export const IRDiffView = ({ originalIr, chaoticIr }) => {
         meta: null
     });
 
+    const currentSnapshot = snapshots[step] || { name: 'Empty', ir: [] };
+    const prevSnapshot = (step > 0 ? snapshots[step - 1] : snapshots[0]) || { name: 'Empty', ir: [] };
+
     const getExplanationForMeta = (meta) => {
         const exactMatch = MCP.getExplanation(meta, 'student');
-        if (exactMatch && !exactMatch.startsWith("Transformation '")) {
-            return exactMatch;
-        }
-
-        const map = {
-            'CHAOS_OPAQUE_PREDICATE': 'CHAOS_OPAQUE_PRED',
-            'CHAOS_CF_FLATTENING_LITE': 'CHAOS_CF_FLATTEN'
-        };
-        const diagnosticId = map[meta] || meta;
-        return MCP.getExplanation(diagnosticId, 'student');
+        if (exactMatch && !exactMatch.startsWith("Transformation '")) return exactMatch;
+        const map = { 'CHAOS_OPAQUE_PREDICATE': 'CHAOS_OPAQUE_PRED', 'CHAOS_CF_FLATTENING_LITE': 'CHAOS_CF_FLATTEN' };
+        return MCP.getExplanation(map[meta] || meta, 'student');
     };
 
     const handleMouseEnter = (e, meta) => {
         if (!meta) return;
-
-        // Calculate position relative to viewport
         const rect = e.currentTarget.getBoundingClientRect();
-        const viewportWidth = window.innerWidth;
-
-        // Default: Position to the right + 10px
         let x = rect.right + 10;
-        let y = rect.top;
-
-        // If too far right, flip to left side
-        if (x + 300 > viewportWidth) {
-            x = rect.left - 310;
-        }
-
-        setTooltipState({
-            visible: true,
-            x,
-            y,
-            content: getExplanationForMeta(meta),
-            meta
-        });
+        if (x + 300 > window.innerWidth) x = rect.left - 310;
+        setTooltipState({ visible: true, x, y: rect.top, content: getExplanationForMeta(meta), meta });
     };
 
-    const handleMouseLeave = () => {
-        setTooltipState(prev => ({ ...prev, visible: false }));
-    };
+    const handleMouseLeave = () => setTooltipState(prev => ({ ...prev, visible: false }));
 
-    const renderInstruction = (instr, idx, isOriginal) => {
-        const isChanged = !isOriginal && instr.meta;
-        const uniqueId = `${isOriginal ? 'orig' : 'chaos'}_${idx}`;
-
+    const renderInstruction = (instr, idx, isNew) => {
+        const isChanged = isNew && instr.meta;
         return (
             <div
-                key={uniqueId}
-                className={`flex gap-3 px-3 py-2 rounded-lg relative group ${isChanged
-                    ? 'bg-mcp/10 border border-mcp/30 cursor-help'
-                    : 'hover:bg-slate-800/50'
-                    }`}
+                key={`${isNew ? 'new' : 'old'}_${idx}`}
+                className={`flex gap-3 px-3 py-2 rounded-lg relative group ${isChanged ? 'bg-mcp/10 border border-mcp/30 cursor-help' : 'hover:bg-slate-800/50'}`}
                 onMouseEnter={(e) => isChanged && handleMouseEnter(e, instr.meta)}
                 onMouseLeave={handleMouseLeave}
             >
@@ -80,10 +52,6 @@ export const IRDiffView = ({ originalIr, chaoticIr }) => {
                         {instr.right !== undefined && <span className="text-slate-500"> op {String(instr.right)}</span>}
                         {instr.value !== undefined && <span className="text-slate-500"> = {String(instr.value)}</span>}
                     </div>
-
-                    {isChanged && (
-                        <span className="text-[10px] font-bold text-mcp bg-mcp/20 px-2 py-0.5 rounded">{instr.meta}</span>
-                    )}
                 </div>
             </div>
         );
@@ -91,58 +59,111 @@ export const IRDiffView = ({ originalIr, chaoticIr }) => {
 
     return (
         <>
-            <div className="glass-panel h-full flex flex-col overflow-hidden">
+            <div className="glass-panel h-full flex flex-col overflow-hidden bg-slate-900/40 border-slate-800">
                 {/* Header */}
-                <div className="px-5 py-3 border-b border-slate-700 flex items-center justify-between">
-                    <div className="flex items-center gap-3 text-slate-400">
-                        <Layers size={18} className="text-mcp" />
-                        <span className="text-sm font-semibold">IR Comparison</span>
-                    </div>
-                    <div className="flex text-xs font-medium">
-                        <span className="px-3 py-1 bg-slate-800 rounded-l-lg border border-slate-700 text-slate-400">Original</span>
-                        <span className="px-3 py-1 bg-mcp/20 rounded-r-lg border border-mcp/30 text-mcp">Chaotic</span>
-                    </div>
+                <div className="px-6 py-4 border-b border-slate-800 flex items-center gap-3">
+                    <Layers size={20} className="text-violet-400" />
+                    <h3 className="font-bold text-sm uppercase tracking-widest text-slate-200">Transformation Timeline</h3>
                 </div>
 
-                {/* Content */}
-                <div className="flex-1 grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-slate-700 overflow-hidden">
-                    {/* Original IR */}
-                    <div className="overflow-y-auto custom-scrollbar">
-                        <div className="px-3 py-2 sticky top-0 bg-slate-800/80 backdrop-blur text-xs font-medium text-slate-500 uppercase tracking-wide border-b border-slate-700 z-10">
-                            Original IR
-                        </div>
-                        <div className="p-3 space-y-1">
-                            {originalIr && originalIr.length > 0 ? (
-                                originalIr.map((instr, idx) => renderInstruction(instr, idx, true))
-                            ) : (
-                                <div className="flex items-center justify-center h-32 text-slate-600">
-                                    <Info size={20} className="mr-2" />
-                                    <span className="text-sm">No IR generated</span>
-                                </div>
-                            )}
+                <div className="flex-1 flex overflow-hidden">
+                    {/* Vertical Rail Navigation */}
+                    <div className="w-20 flex flex-col items-center py-6 relative border-r border-slate-800/50 bg-slate-950/20">
+                        {/* Rail Line */}
+                        <div className="absolute top-10 bottom-10 w-1 bg-slate-800 rounded-full" />
+
+                        <div className="flex flex-col gap-8 relative z-10 w-full items-center">
+                            {snapshots.map((snap, i) => (
+                                <button
+                                    key={i}
+                                    onClick={() => setStep(i)}
+                                    className="group relative flex items-center justify-center"
+                                >
+                                    {/* Step Indicator */}
+                                    <div className={`
+                                    w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs transition-all duration-300
+                                    ${step === i
+                                            ? 'bg-violet-600 text-white shadow-[0_0_15px_rgba(124,58,237,0.5)] scale-110'
+                                            : 'bg-slate-800 text-slate-500 hover:bg-slate-700 hover:text-slate-300'
+                                        }
+                                `}>
+                                        {i === 0 ? <Info size={14} /> : i}
+                                    </div>
+
+                                    {/* Pulse for active step */}
+                                    {step === i && (
+                                        <div className="absolute inset-0 rounded-full bg-violet-600 animate-pulse opacity-20" />
+                                    )}
+
+                                    {/* Hover tooltip (Snapshot Name) */}
+                                    <div className="absolute left-14 px-2 py-1 rounded bg-slate-800 border border-slate-700 text-[10px] text-slate-300 uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-50 pointer-events-none shadow-xl">
+                                        {snap.name}
+                                    </div>
+                                </button>
+                            ))}
                         </div>
                     </div>
 
-                    {/* Chaotic IR */}
-                    <div className="overflow-y-auto custom-scrollbar bg-mcp/[0.02]">
-                        <div className="px-3 py-2 sticky top-0 bg-mcp/10 backdrop-blur text-xs font-medium text-mcp uppercase tracking-wide border-b border-mcp/20 z-10">
-                            Chaotic IR
+                    {/* Instruction List */}
+                    <div className="flex-1 flex flex-col bg-slate-950/40 p-6 overflow-hidden">
+                        <div className="mb-4 flex items-center gap-3">
+                            <span className="text-[10px] font-bold text-slate-500 bg-slate-800/50 px-2 py-1 rounded border border-slate-700/50">{step}</span>
+                            <h4 className="text-xs font-bold text-violet-300 uppercase tracking-widest">{currentSnapshot.name}</h4>
                         </div>
-                        <div className="p-3 space-y-1">
-                            {chaoticIr && chaoticIr.length > 0 ? (
-                                chaoticIr.map((instr, idx) => renderInstruction(instr, idx, false))
-                            ) : (
-                                <div className="flex items-center justify-center h-32 text-mcp/50">
-                                    <Info size={20} className="mr-2" />
-                                    <span className="text-sm">Awaiting compilation</span>
-                                </div>
-                            )}
+
+                        <div className="flex-1 overflow-y-auto custom-scrollbar bg-slate-900/40 rounded-xl border border-slate-800/50 p-4 shadow-inner">
+                            <div className="space-y-1">
+                                {currentSnapshot.ir.map((instr, idx) => {
+                                    const isChanged = instr.meta && step > 0;
+                                    return (
+                                        <div
+                                            key={idx}
+                                            className={`
+                                            flex gap-4 px-4 py-2.5 rounded-lg border transition-all group
+                                            ${isChanged
+                                                    ? 'bg-violet-950/20 border-violet-500/30'
+                                                    : 'bg-transparent border-transparent hover:bg-slate-800/30'
+                                                }
+                                        `}
+                                            onMouseEnter={(e) => isChanged && handleMouseEnter(e, instr.meta)}
+                                            onMouseLeave={handleMouseLeave}
+                                        >
+                                            <span className="text-xs text-slate-600 font-mono w-6 text-right select-none opacity-50 group-hover:opacity-100">{idx}</span>
+                                            <div className="flex-1 flex items-center justify-between">
+                                                <div className="font-mono text-sm tracking-tight flex items-center gap-2">
+                                                    <span className={`font-bold ${isChanged ? 'text-violet-400' : 'text-slate-300'}`}>{instr.op}</span>
+                                                    {instr.target && (
+                                                        <>
+                                                            <span className="text-violet-500/80 font-semibold">{instr.target}</span>
+                                                            <span className="text-slate-600">=</span>
+                                                        </>
+                                                    )}
+                                                    {instr.left !== undefined && <span className="text-slate-400">{String(instr.left)}</span>}
+                                                    {instr.right !== undefined && (
+                                                        <>
+                                                            <span className="text-slate-600">op</span>
+                                                            <span className="text-slate-400">{String(instr.right)}</span>
+                                                        </>
+                                                    )}
+                                                    {instr.value !== undefined && <span className="text-emerald-400/80">{String(instr.value)}</span>}
+                                                </div>
+
+                                                {isChanged && (
+                                                    <div className="flex items-center gap-2">
+                                                        <div className="w-1.5 h-1.5 rounded-full bg-violet-500 animate-pulse shadow-[0_0_8px_rgba(139,92,246,0.6)]" />
+                                                        <span className="text-[9px] font-bold text-violet-400/70 uppercase tracking-tighter bg-violet-500/10 px-1.5 py-0.5 rounded border border-violet-500/20">{instr.meta}</span>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            {/* Portal Tooltip */}
             {createPortal(
                 <AnimatePresence>
                     {tooltipState.visible && (
@@ -169,8 +190,6 @@ export const IRDiffView = ({ originalIr, chaoticIr }) => {
                             <p className="text-sm text-slate-200 leading-relaxed font-medium">
                                 {tooltipState.content}
                             </p>
-
-                            {/* Decorative glow */}
                             <div className="absolute inset-0 bg-mcp/5 rounded-xl pointer-events-none" />
                         </motion.div>
                     )}

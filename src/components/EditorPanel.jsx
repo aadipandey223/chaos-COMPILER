@@ -1,5 +1,5 @@
 import React from 'react';
-import { Code2, Zap, Sparkles, RotateCcw, Copy, Check } from 'lucide-react';
+import { Code2, Zap, Sparkles, RotateCcw, Copy, Check, Target } from 'lucide-react';
 import { motion } from 'framer-motion';
 import Editor from 'react-simple-code-editor';
 import Prism from 'prismjs';
@@ -17,7 +17,8 @@ export const EditorPanel = ({
     isCompiling,
     copiedCode,
     onCopyCode,
-    lingoValid
+    lingoValid,
+    showQuickWin = false
 }) => {
     return (
         <div className="glass-panel h-full flex flex-col overflow-hidden">
@@ -73,9 +74,26 @@ export const EditorPanel = ({
 
             {/* Controls */}
             <div className="p-5 border-t border-slate-700 space-y-4">
+                {/* Quick Win Banner */}
+                {showQuickWin && (
+                    <motion.div
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="bg-gradient-to-r from-violet-500/10 to-blue-500/10 border border-violet-500/30 rounded-xl p-3"
+                    >
+                        <div className="flex items-center gap-2 text-violet-400 text-xs font-bold mb-1">
+                            <Zap size={14} />
+                            QUICK START
+                        </div>
+                        <p className="text-xs text-slate-300">
+                            Click "Apply Chaos" below → Watch IR transform → See result verified ✓
+                        </p>
+                    </motion.div>
+                )}
+
                 {/* Intensity Control */}
                 <div className="flex items-center justify-between">
-                    <label className="text-sm text-slate-400 font-medium">Chaos Intensity</label>
+                    <label className="text-sm text-slate-400 font-medium">Transformation Intensity</label>
                     <div className="flex bg-slate-800 p-1 rounded-lg border border-slate-700">
                         {['low', 'medium', 'high'].map((level) => (
                             <button
@@ -104,10 +122,13 @@ export const EditorPanel = ({
                     <button
                         onClick={onCompile}
                         disabled={isCompiling}
-                        className={`flex-[2] flex items-center justify-center gap-2 py-2.5 text-sm font-bold rounded-lg transition-all ${isCompiling
-                            ? 'bg-slate-700 text-slate-500 cursor-not-allowed'
-                            : 'bg-mcp text-white hover:bg-violet-600 mcp-glow'
-                            }`}
+                        className={`flex-[2] flex items-center justify-center gap-2 py-2.5 text-sm font-bold rounded-lg transition-all ${
+                            isCompiling
+                                ? 'bg-slate-700 text-slate-500 cursor-not-allowed'
+                                : showQuickWin
+                                ? 'bg-gradient-to-r from-violet-600 to-blue-600 text-white hover:from-violet-500 hover:to-blue-500 animate-pulse shadow-lg shadow-violet-500/30'
+                                : 'bg-mcp text-white hover:bg-violet-600 mcp-glow'
+                        }`}
                     >
                         {isCompiling ? (
                             <>
@@ -117,7 +138,8 @@ export const EditorPanel = ({
                         ) : (
                             <>
                                 <Zap size={16} />
-                                Compile & Chaos
+                                Run Lab Engine
+                                {showQuickWin && <span className="text-[10px] ml-1">← Start!</span>}
                             </>
                         )}
                     </button>
