@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Settings, Zap, Play, Plus, Trash2, Shield, Info, ToggleLeft, ToggleRight, FlaskConical, GripVertical, CheckCircle2, HelpCircle, RotateCcw, Save, Upload, Sparkles } from 'lucide-react';
+import { Settings, Zap, Play, Plus, Trash2, Shield, Info, ToggleLeft, ToggleRight, FlaskConical, GripVertical, CheckCircle2, HelpCircle, RotateCcw, Save, Upload, Sparkles, ShieldCheck, ShieldAlert, ArrowRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
+import glossaryData from '../lingo/glossary.json';
+import { useI18n } from '../i18n/LanguageProvider';
 
 const DEFAULT_CONFIG = {
     passes: {
@@ -65,7 +67,24 @@ const DEMO_PRESETS = {
 };
 
 export const ChaosConfig = ({ config, setConfig, ruleHits = {} }) => {
+    const { t } = useI18n();
     const [newRule, setNewRule] = useState({ source: 'ADD', target: 'XOR, AND, MUL' });
+    
+    // Feature: Custom Rule Validation
+    const [isRuleValid, setIsRuleValid] = useState(true);
+
+    useEffect(() => {
+        if (!newRule.target) {
+            setIsRuleValid(false);
+            return;
+        }
+        const ops = newRule.target.split(',').map(s => s.trim().toUpperCase());
+        // Validate against IR Ops whitelist
+        const VALID_OPS = ['ADD', 'SUB', 'MUL', 'DIV', 'MOD', 'XOR', 'AND', 'OR', 'NOT', 'NEG', 'SHL', 'SHR'];
+        const isValid = ops.every(op => VALID_OPS.includes(op));
+        setIsRuleValid(isValid);
+    }, [newRule.target]);
+
     const [savedPresets, setSavedPresets] = useState([]);
     const [presetName, setPresetName] = useState('');
     const [showSaveDialog, setShowSaveDialog] = useState(false);
@@ -128,7 +147,7 @@ export const ChaosConfig = ({ config, setConfig, ruleHits = {} }) => {
     };
 
     const addRule = () => {
-        if (!newRule.source || !newRule.target) return;
+        if (!newRule.source || !newRule.target || !isRuleValid) return;
         setConfig(prev => ({
             ...prev,
             customRules: [...prev.customRules, { ...newRule, id: Date.now() }]
@@ -164,10 +183,10 @@ export const ChaosConfig = ({ config, setConfig, ruleHits = {} }) => {
     };
 
     const passLabels = {
-        numberEncoding: 'Data Encoding',
-        substitution: 'Substitutions',
-        opaquePredicates: 'Opaque Flow',
-        flattening: 'CF Flattening'
+        numberEncoding: t('chaos.data_encoding', 'Data Encoding'),
+        substitution: t('chaos.substitutions', 'Substitutions'),
+        opaquePredicates: t('chaos.opaque_flow', 'Opaque Flow'),
+        flattening: t('chaos.cf_flattening', 'CF Flattening')
     };
 
     const mutationSteps = Object.keys(config.passes);
@@ -195,8 +214,12 @@ export const ChaosConfig = ({ config, setConfig, ruleHits = {} }) => {
                                 <Icon size={20} />
                             </div>
                             <div className="text-left">
-                                <div className="text-sm font-bold">{preset.name}</div>
-                                <div className="text-[10px] opacity-60 uppercase tracking-wider">Quick Apply</div>
+                                <div className="text-sm font-bold">
+                                    {key === 'arithmeticChaos' ? t('chaos.arithmetic', 'Arithmetic Chaos') :
+                                     key === 'controlFlowChaos' ? t('chaos.control_flow', 'Control Flow Chaos') :
+                                     t('chaos.heavy_obfuscation', 'Heavy Obfuscation')}
+                                </div>
+                                <div className="text-[10px] opacity-60 uppercase tracking-wider">{t('chaos.quick_apply', 'Quick Apply')}</div>
                             </div>
                             <Sparkles size={14} className="ml-auto opacity-40" />
                         </motion.button>
@@ -208,7 +231,7 @@ export const ChaosConfig = ({ config, setConfig, ruleHits = {} }) => {
             <div className="flex items-center justify-between px-2">
                 <div className="flex items-center gap-2">
                     <div className="w-1.5 h-1.5 rounded-full bg-violet-500 animate-pulse" />
-                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em]">Automated Pipeline Stages</span>
+                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em]">{t('chaos.automated_stages', 'Automated Pipeline Stages')}</span>
                 </div>
                 <div className="h-[1px] flex-1 mx-4 bg-gradient-to-r from-slate-800 to-transparent" />
             </div>
@@ -252,7 +275,7 @@ export const ChaosConfig = ({ config, setConfig, ruleHits = {} }) => {
                                     <Icon size={14} className={isActive ? 'text-violet-400' : 'text-slate-600'} />
                                     <span className="text-xs font-bold tracking-wide">{passLabels[pass]}</span>
                                 </div>
-                                <span className="text-[10px] opacity-40 uppercase tracking-widest font-medium">Stage {stepNum} Pass</span>
+                                <span className="text-[10px] opacity-40 uppercase tracking-widest font-medium">{t('chaos.stage_pass', 'Stage')} {stepNum} {t('chaos.stage_pass', 'Pass')}</span>
 
                                 {isActive && (
                                     <motion.div
@@ -270,7 +293,7 @@ export const ChaosConfig = ({ config, setConfig, ruleHits = {} }) => {
             <div className="flex items-center justify-between px-2 pt-4">
                 <div className="flex items-center gap-2">
                     <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em]">Manual Mutation Overrides</span>
+                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em]">{t('chaos.manual_overrides', 'Manual Mutation Overrides')}</span>
                 </div>
                 <div className="h-[1px] flex-1 mx-4 bg-gradient-to-r from-slate-800 to-transparent" />
                 <div className="flex items-center gap-2">
@@ -279,14 +302,14 @@ export const ChaosConfig = ({ config, setConfig, ruleHits = {} }) => {
                         className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all flex items-center gap-1.5"
                     >
                         <Save size={12} />
-                        Save
+                        {t('chaos.save', 'Save')}
                     </button>
                     <button
                         onClick={resetToDefault}
                         className="px-3 py-1.5 bg-slate-800 hover:bg-rose-500/20 text-slate-400 hover:text-rose-400 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all flex items-center gap-1.5 border border-transparent hover:border-rose-500/30"
                     >
                         <RotateCcw size={12} />
-                        Reset
+                        {t('chaos.reset', 'Reset')}
                     </button>
                 </div>
             </div>
@@ -306,7 +329,7 @@ export const ChaosConfig = ({ config, setConfig, ruleHits = {} }) => {
                                 value={presetName}
                                 onChange={(e) => setPresetName(e.target.value)}
                                 onKeyPress={(e) => e.key === 'Enter' && savePreset()}
-                                placeholder="Preset name..."
+                                placeholder={t('chaos.preset_name', 'Preset name...')}
                                 className="flex-1 bg-slate-950 border border-slate-800 rounded-lg px-4 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
                                 autoFocus
                             />
@@ -315,7 +338,7 @@ export const ChaosConfig = ({ config, setConfig, ruleHits = {} }) => {
                                 disabled={!presetName.trim()}
                                 className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-800 disabled:text-slate-600 text-white rounded-lg text-xs font-bold uppercase tracking-wider transition-all"
                             >
-                                Save Preset
+                                {t('chaos.save_preset', 'Save Preset')}
                             </button>
                         </div>
                     </motion.div>
@@ -354,7 +377,7 @@ export const ChaosConfig = ({ config, setConfig, ruleHits = {} }) => {
                 <div className="lg:col-span-4 space-y-5 glass-panel p-6 bg-slate-950/40 border-slate-800">
                     <div className="space-y-4">
                         <div className="space-y-2">
-                            <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Source Operation</label>
+                            <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500">{t('chaos.source_operation', 'Source Operation')}</label>
                             <div className="relative">
                                 <input
                                     type="text"
@@ -368,7 +391,7 @@ export const ChaosConfig = ({ config, setConfig, ruleHits = {} }) => {
                         </div>
 
                         <div className="space-y-2">
-                            <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Mutation Target Sequence</label>
+                            <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500">{t('chaos.mutation_target', 'Mutation Target Sequence')}</label>
                             <textarea
                                 value={newRule.target}
                                 onChange={e => setNewRule(prev => ({ ...prev, target: e.target.value.toUpperCase() }))}
@@ -382,8 +405,19 @@ export const ChaosConfig = ({ config, setConfig, ruleHits = {} }) => {
                     {/* Live Preview */}
                     <div className="bg-slate-900/60 rounded-xl p-4 border border-slate-800/50 space-y-3">
                         <div className="flex items-center justify-between">
-                            <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Live Transformation Preview</span>
-                            <HelpCircle size={12} className="text-slate-700" />
+                            <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">{t('chaos.live_preview', 'Live Transformation Preview')}</span>
+                            {/* Feature: Lingo Validation Badge */}
+                            {isRuleValid ? (
+                                <div className="flex items-center gap-1.5 px-2 py-0.5 bg-emerald-500/10 text-emerald-500 rounded border border-emerald-500/20">
+                                    <ShieldCheck size={10} />
+                                    <span className="text-[9px] font-bold uppercase tracking-wider">{t('chaos.rule_validated', 'Rule Validated by Lingo')}</span>
+                                </div>
+                            ) : (
+                                <div className="flex items-center gap-1.5 px-2 py-0.5 bg-red-500/10 text-red-500 rounded border border-red-500/20">
+                                    <ShieldAlert size={10} />
+                                    <span className="text-[9px] font-bold uppercase tracking-wider">{t('chaos.glossary_violation', 'Glossary Violation')}</span>
+                                </div>
+                            )}
                         </div>
                         <div className="font-mono text-[11px] space-y-1.5 leading-relaxed">
                             <div className="text-slate-500 flex items-center gap-2">
@@ -402,12 +436,18 @@ export const ChaosConfig = ({ config, setConfig, ruleHits = {} }) => {
                     </div>
 
                     <motion.button
-                        whileHover={{ scale: 1.01 }}
-                        whileTap={{ scale: 0.99 }}
+                        whileHover={isRuleValid ? { scale: 1.01 } : {}}
+                        whileTap={isRuleValid ? { scale: 0.99 } : {}}
                         onClick={addRule}
-                        className="w-full py-4 bg-violet-600 hover:bg-violet-500 text-white rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all shadow-xl shadow-violet-900/20 flex items-center justify-center gap-2"
+                        disabled={!isRuleValid}
+                        className={`w-full py-4 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-2 ${
+                            isRuleValid 
+                            ? 'bg-violet-600 hover:bg-violet-500 text-white shadow-xl shadow-violet-900/20' 
+                            : 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700'
+                        }`}
                     >
-                        <Plus size={16} /> Deploy Rule
+                        {isRuleValid ? <Plus size={16} /> : <ShieldAlert size={16} />} 
+                        {isRuleValid ? t('chaos.deploy_rule', 'Deploy Rule') : t('chaos.validation_failed', 'Validation Failed')}
                     </motion.button>
                 </div>
 
@@ -427,8 +467,8 @@ export const ChaosConfig = ({ config, setConfig, ruleHits = {} }) => {
                                                     className="h-full flex flex-col items-center justify-center bg-slate-950/20 border-2 border-dashed border-slate-800 rounded-3xl p-10 grayscale opacity-40"
                                                 >
                                                     <FlaskConical size={48} strokeWidth={1} className="mb-4 text-slate-500" />
-                                                    <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">Laboratory Empty</p>
-                                                    <p className="text-[10px] text-slate-600 mt-2">Deploy mutations to overwrite system logic</p>
+                                                    <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">{t('chaos.laboratory_empty', 'Laboratory Empty')}</p>
+                                                    <p className="text-[10px] text-slate-600 mt-2">{t('chaos.deploy_mutations', 'Deploy mutations to overwrite system logic')}</p>
                                                 </motion.div>
                                             ) : (
                                                 config.customRules.map((rule, index) => {
@@ -482,12 +522,12 @@ export const ChaosConfig = ({ config, setConfig, ruleHits = {} }) => {
                                                                             {isApplied ? (
                                                                                 <>
                                                                                     <CheckCircle2 size={10} />
-                                                                                    Applied ({hitCount} {hitCount === 1 ? 'hit' : 'hits'})
+                                                                                    {t('chaos.applied', 'Applied')} ({hitCount} {hitCount === 1 ? t('chaos.hit', 'hit') : t('chaos.hits', 'hits')})
                                                                                 </>
                                                                             ) : (
                                                                                 <>
                                                                                     <div className="w-1.5 h-1.5 rounded-full bg-slate-700" />
-                                                                                    Inactive
+                                                                                    {t('chaos.inactive', 'Inactive')}
                                                                                 </>
                                                                             )}
                                                                         </div>
@@ -517,20 +557,3 @@ export const ChaosConfig = ({ config, setConfig, ruleHits = {} }) => {
         </div>
     );
 };
-
-const ArrowRight = ({ size, className }) => (
-    <svg
-        width={size}
-        height={size}
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        className={className}
-    >
-        <path d="M5 12h14" />
-        <path d="m12 5 7 7-7 7" />
-    </svg>
-);

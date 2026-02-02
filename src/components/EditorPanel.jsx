@@ -5,6 +5,7 @@ import Editor from 'react-simple-code-editor';
 import Prism from 'prismjs';
 import 'prismjs/components/prism-clike';
 import 'prismjs/components/prism-c';
+import { useI18n } from '../i18n/LanguageProvider';
 
 export const EditorPanel = ({
     code,
@@ -20,6 +21,8 @@ export const EditorPanel = ({
     lingoValid,
     showQuickWin = false
 }) => {
+    const { t } = useI18n();
+    
     return (
         <div className="glass-panel h-full flex flex-col overflow-hidden">
             {/* Header */}
@@ -39,7 +42,7 @@ export const EditorPanel = ({
                         onClick={onLoadExample}
                         className="px-3 py-1.5 text-xs font-medium text-slate-400 hover:text-white bg-slate-800 rounded-lg border border-slate-700 hover:border-mcp transition-all"
                     >
-                        Load Example
+                        {t('ui.load_example', 'Load Example')}
                     </button>
                 </div>
             </div>
@@ -83,19 +86,19 @@ export const EditorPanel = ({
                     >
                         <div className="flex items-center gap-2 text-violet-400 text-xs font-bold mb-1">
                             <Zap size={14} />
-                            QUICK START
+                            {t('ui.quick_start', 'QUICK START').toUpperCase()}
                         </div>
                         <p className="text-xs text-slate-300">
-                            Click "Apply Chaos" below → Watch IR transform → See result verified ✓
+                            {t('ui.quick_start_hint', 'Click "Apply Chaos" below → Watch IR transform → See result verified ✓')}
                         </p>
                     </motion.div>
                 )}
 
                 {/* Intensity Control */}
                 <div className="flex items-center justify-between">
-                    <label className="text-sm text-slate-400 font-medium">Transformation Intensity</label>
+                    <label className="text-sm text-slate-400 font-medium">{t('ui.transformation_intensity', 'Transformation Intensity')}</label>
                     <div className="flex bg-slate-800 p-1 rounded-lg border border-slate-700">
-                        {['low', 'medium', 'high'].map((level) => (
+                        {['none', 'low', 'medium', 'high'].map((level) => (
                             <button
                                 key={level}
                                 onClick={() => setIntensity(level)}
@@ -104,7 +107,7 @@ export const EditorPanel = ({
                                     : 'text-slate-500 hover:text-slate-300'
                                     }`}
                             >
-                                {level}
+                                {t(`ui.${level}`, level)}
                             </button>
                         ))}
                     </div>
@@ -117,7 +120,7 @@ export const EditorPanel = ({
                         className="flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-medium text-slate-400 hover:text-white bg-slate-800 rounded-lg border border-slate-700 hover:border-slate-600 transition-all"
                     >
                         <Sparkles size={16} />
-                        Beautify
+                        {t('ui.beautify', 'Beautify')}
                     </button>
                     <button
                         onClick={onCompile}
@@ -133,13 +136,13 @@ export const EditorPanel = ({
                         {isCompiling ? (
                             <>
                                 <div className="w-4 h-4 border-2 border-slate-500 border-t-white rounded-full animate-spin" />
-                                Compiling...
+                                {t('ui.compiling', 'Compiling...')}
                             </>
                         ) : (
                             <>
                                 <Zap size={16} />
-                                Run Lab Engine
-                                {showQuickWin && <span className="text-[10px] ml-1">← Start!</span>}
+                                {t('ui.run_engine', 'Run Lab Engine')}
+                                {showQuickWin && <span className="text-[10px] ml-1">← {t('ui.start', 'Start')}!</span>}
                             </>
                         )}
                     </button>
@@ -156,7 +159,7 @@ export const EditorPanel = ({
                             }`}
                     >
                         <div className={`w-2 h-2 rounded-full ${lingoValid ? 'bg-emerald-400' : 'bg-red-400'}`} />
-                        {lingoValid ? 'Lingo Verified' : 'Validation Failed'}
+                        {lingoValid ? t('ui.lingo_verified', 'Lingo Verified') : t('ui.validation_failed', 'Validation Failed')}
                     </motion.div>
                 )}
             </div>

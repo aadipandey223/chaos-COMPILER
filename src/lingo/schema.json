@@ -1,0 +1,33 @@
+{
+  "type": "object",
+  "required": ["id", "context", "severity"],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^(CHAOS_|LINGO_|IR_|PARSE_|CODEGEN_)[A-Z_0-9]+$",
+      "description": "Unique diagnostic identifier with valid prefix"
+    },
+    "context": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Dot-notation context path"
+    },
+    "severity": {
+      "enum": ["info", "warning", "error"],
+      "description": "Diagnostic severity level"
+    },
+    "params": {
+      "type": "object",
+      "description": "Additional parameters (keys must be in glossary)"
+    },
+    "explanation": {
+      "type": "string",
+      "description": "Human-readable explanation"
+    },
+    "timestamp": {
+      "type": "number",
+      "description": "Unix timestamp of diagnostic creation"
+    }
+  },
+  "additionalProperties": false
+}

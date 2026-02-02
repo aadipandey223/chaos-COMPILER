@@ -3,8 +3,11 @@
  * Enforces glossary, validates placeholders, and ensures terminology consistency.
  */
 
+import glossaryData from '../lingo/glossary.json';
+
 // Controlled vocabularies
-const GLOSSARY = ['block', 'ir', 'ssa', 'chaos', 'predicate', 'operator', 'instruction', 'transformation', 'strategy', 'intensity', 'original', 'value', 'budget', 'safety', 'seed'];
+// Use the glossary from the JSON file, plus some critical IR terms if missing
+const GLOSSARY = [...new Set([...glossaryData, 'block', 'ir', 'ssa', 'chaos', 'predicate', 'operator', 'instruction', 'transformation', 'strategy', 'intensity', 'original', 'value', 'budget', 'safety', 'seed'])];
 const REQUIRED_FIELDS = ['id', 'context', 'severity'];
 const VALID_SEVERITIES = ['info', 'warning', 'error', 'low', 'medium', 'high'];
 const VALID_ID_PREFIXES = ['CHAOS_', 'LINGO_', 'IR_', 'PARSE_', 'CODEGEN_'];

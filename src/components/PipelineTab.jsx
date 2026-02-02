@@ -1,83 +1,85 @@
 import React from 'react';
 import { Cpu, Cog, Atom, ArrowRight, Sparkles, Shield, Brain, GitBranch, AlertTriangle, ShieldCheck, HelpCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
-
-const components = [
-    {
-        id: 'parser',
-        name: 'Parser Agent',
-        desc: 'Lexes & parses C source into AST',
-        icon: GitBranch,
-        type: 'trusted',
-        role: 'Structural Foundation'
-    },
-    {
-        id: 'ir',
-        name: 'IR Generator',
-        desc: 'Converts AST to intermediate representation',
-        icon: Cpu,
-        type: 'trusted',
-        role: 'Semantic Translation'
-    },
-    {
-        id: 'chaos',
-        name: 'Chaos Engine',
-        desc: 'Applies polymorphic transformations',
-        icon: Atom,
-        type: 'trusted',
-        role: 'Entropy Generation'
-    },
-    {
-        id: 'lingo',
-        name: 'Lingo Validator (Lingo.dev)',
-        desc: 'Validates diagnostic structure, terminology, and context (not code generation)',
-        icon: Shield,
-        type: 'authoritative',
-        role: 'Authority & Validation'
-    },
-    {
-        id: 'codegen',
-        name: 'Code Generator',
-        desc: 'Emits x86 assembly from transformed IR',
-        icon: Cog,
-        type: 'trusted',
-        role: 'Target Emission'
-    },
-    {
-        id: 'mcp',
-        name: 'MCP Explainer',
-        desc: 'Generates contextual explanations (never rendered without validation)',
-        icon: Brain,
-        type: 'generative',
-        role: 'Educational Insights'
-    },
-];
-
-const mainPipeline = ['parser', 'ir', 'chaos', 'lingo', 'codegen'];
+import { useI18n } from '../i18n/LanguageProvider';
 
 export const PipelineTab = () => {
+    const { t } = useI18n();
+    
+    const components = [
+        {
+            id: 'parser',
+            name: t('pipeline.parser', 'Parser Agent'),
+            desc: t('pipeline.parser_desc', 'Lexes & parses C source into AST'),
+            icon: GitBranch,
+            type: 'trusted',
+            role: t('pipeline.parser_role', 'Structural Foundation')
+        },
+        {
+            id: 'ir',
+            name: t('pipeline.ir_gen', 'IR Generator'),
+            desc: t('pipeline.ir_gen_desc', 'Converts AST to intermediate representation'),
+            icon: Cpu,
+            type: 'trusted',
+            role: t('pipeline.ir_gen_role', 'Semantic Translation')
+        },
+        {
+            id: 'chaos',
+            name: t('pipeline.chaos_engine', 'Chaos Engine'),
+            desc: t('pipeline.chaos_engine_desc', 'Applies polymorphic transformations'),
+            icon: Atom,
+            type: 'trusted',
+            role: t('pipeline.chaos_engine_role', 'Entropy Generation')
+        },
+        {
+            id: 'lingo',
+            name: t('pipeline.lingo', 'Lingo Validator (Lingo.dev)'),
+            desc: t('pipeline.lingo_desc', 'Validates diagnostic structure, terminology, and context (not code generation)'),
+            icon: Shield,
+            type: 'authoritative',
+            role: t('pipeline.lingo_role', 'Authority & Validation')
+        },
+        {
+            id: 'codegen',
+            name: t('pipeline.codegen', 'Code Generator'),
+            desc: t('pipeline.codegen_desc', 'Emits x86 assembly from transformed IR'),
+            icon: Cog,
+            type: 'trusted',
+            role: t('pipeline.codegen_role', 'Target Emission')
+        },
+        {
+            id: 'mcp',
+            name: t('pipeline.mcp', 'MCP Explainer'),
+            desc: t('pipeline.mcp_desc', 'Generates contextual explanations (never rendered without validation)'),
+            icon: Brain,
+            type: 'generative',
+            role: t('pipeline.mcp_role', 'Educational Insights')
+        },
+    ];
+    
+    const mainPipeline = ['parser', 'ir', 'chaos', 'lingo', 'codegen'];
+
     return (
         <div className="max-w-6xl mx-auto p-4 sm:p-6 space-y-6 sm:space-y-10">
             {/* Header */}
             <div className="text-center mb-8 sm:mb-12">
                 <div className="inline-flex items-center gap-2 px-3 sm:px-4 py-1.5 sm:py-2 bg-mcp/10 rounded-full border border-mcp/30 mb-3 sm:mb-4">
                     <Sparkles size={14} className="text-mcp sm:w-[16px] sm:h-[16px]" />
-                    <span className="text-[10px] sm:text-xs font-bold text-mcp uppercase tracking-widest">System Architecture</span>
+                    <span className="text-[10px] sm:text-xs font-bold text-mcp uppercase tracking-widest">{t('pipeline.system_architecture', 'System Architecture')}</span>
                 </div>
                 <div className="flex items-center justify-center gap-2 sm:gap-3 mb-2 sm:mb-3">
-                    <h2 className="text-2xl sm:text-4xl font-bold text-white tracking-tight">Pipeline Components</h2>
+                    <h2 className="text-2xl sm:text-4xl font-bold text-white tracking-tight">{t('pipeline.components', 'Pipeline Components')}</h2>
                     <div className="group relative">
                         <HelpCircle size={16} className="text-slate-500 cursor-help hover:text-slate-300 transition-colors sm:w-[18px] sm:h-[18px]" />
                         <div className="absolute top-1/2 left-full ml-3 sm:ml-4 -translate-y-1/2 w-48 sm:w-64 p-3 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl text-[10px] sm:text-xs text-slate-300 opacity-0 group-hover:opacity-100 transition-all pointer-events-none z-50">
                             <div className="absolute top-1/2 -left-1 -translate-y-1/2 w-2 h-2 bg-slate-900 border-b border-l border-slate-700 rotate-45" />
-                            <p className="font-bold text-white mb-1">Why validation matters:</p>
-                            AI explains what might be true. Lingo enforces what is allowed to be shown.
+                                <p className="font-bold text-white mb-1">{t('pipeline.validation_tooltip', 'Why validation matters:')}</p>
+                                {t('pipeline.validation_desc', 'AI explains what might be true. Lingo enforces what is allowed to be shown.')}
                         </div>
                     </div>
                 </div>
                 <p className="text-slate-400 max-w-2xl mx-auto text-sm sm:text-lg leading-relaxed px-2">
-                    Some components generate content. One component enforces correctness.
-                    We treat AI/Generative output as untrusted until verified by the validation gate.
+                    {t('pipeline.validation_desc', 'Some components generate content. One component enforces correctness. We treat AI/Generative output as untrusted until verified by the validation gate.')}
                 </p>
             </div>
 
@@ -87,7 +89,7 @@ export const PipelineTab = () => {
                 <div>
                     <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4 flex items-center gap-2">
                         <ShieldCheck size={14} className="text-emerald-500" />
-                        Authoritative / Trusted Layer
+                        {t('pipeline.authoritative_layer', 'Authoritative / Trusted Layer')}
                     </h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                         {components.filter(c => c.type !== 'generative').map((comp, idx) => (
@@ -108,7 +110,7 @@ export const PipelineTab = () => {
                                         <div className="flex items-center justify-between mb-1">
                                             <h4 className="font-bold text-white group-hover:text-emerald-400 transition-colors">{comp.name}</h4>
                                             {comp.type === 'authoritative' && (
-                                                <span className="text-[9px] bg-emerald-500/10 text-emerald-500 border border-emerald-500/30 px-1.5 py-0.5 rounded font-bold uppercase">Truth</span>
+                                                <span className="text-[9px] bg-emerald-500/10 text-emerald-500 border border-emerald-500/30 px-1.5 py-0.5 rounded font-bold uppercase">{t('pipeline.truth_badge', 'Truth')}</span>
                                             )}
                                         </div>
                                         <p className="text-[10px] text-slate-500 uppercase font-bold mb-2">{comp.role}</p>
@@ -124,7 +126,7 @@ export const PipelineTab = () => {
                 <div>
                     <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4 flex items-center gap-2">
                         <AlertTriangle size={14} className="text-mcp" />
-                        Generative / Untrusted Layer
+                        {t('pipeline.generative_layer', 'Generative / Untrusted Layer')}
                     </h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                         {components.filter(c => c.type === 'generative').map((comp) => (
@@ -141,7 +143,7 @@ export const PipelineTab = () => {
                                     <div className="flex-1">
                                         <div className="flex items-center justify-between mb-1">
                                             <h4 className="font-bold text-white group-hover:text-mcp transition-colors">{comp.name}</h4>
-                                            <span className="text-[9px] bg-mcp/10 text-mcp border border-mcp/30 px-1.5 py-0.5 rounded font-bold uppercase">Untrusted</span>
+                                            <span className="text-[9px] bg-mcp/10 text-mcp border border-mcp/30 px-1.5 py-0.5 rounded font-bold uppercase">{t('pipeline.untrusted_badge', 'Untrusted')}</span>
                                         </div>
                                         <p className="text-[10px] text-mcp uppercase font-bold mb-2">{comp.role}</p>
                                         <p className="text-xs text-slate-400 leading-normal">{comp.desc}</p>
@@ -161,18 +163,18 @@ export const PipelineTab = () => {
 
                 <div className="relative z-10">
                     <div className="flex flex-col sm:flex-row items-center justify-between mb-8 gap-4">
-                        <h3 className="text-[10px] sm:text-xs font-black text-slate-300 uppercase tracking-[0.2em]">Enforcement Flow</h3>
+                        <h3 className="text-[10px] sm:text-xs font-black text-slate-300 uppercase tracking-[0.2em]">{t('pipeline.enforcement_flow', 'Enforcement Flow')}</h3>
                         <div className="flex items-center gap-4 text-[9px] sm:text-[10px] font-bold uppercase tracking-tighter bg-slate-800/50 px-3 py-1.5 rounded-full border border-slate-700/50">
-                            <div className="flex items-center gap-1.5"><div className="w-2 h-2 bg-slate-700 rounded-full" /> Logic</div>
-                            <div className="flex items-center gap-1.5"><div className="w-2 h-2 bg-mcp rounded-full shadow-[0_0_8px_rgba(168,85,247,0.4)]" /> Explanation</div>
-                            <div className="flex items-center gap-1.5"><div className="w-2 h-2 bg-emerald-500 rounded-full shadow-[0_0_8px_rgba(16,185,129,0.4)]" /> Validation Gate</div>
+                            <div className="flex items-center gap-1.5"><div className="w-2 h-2 bg-slate-700 rounded-full" /> {t('pipeline.legend_logic', 'Logic')}</div>
+                            <div className="flex items-center gap-1.5"><div className="w-2 h-2 bg-mcp rounded-full shadow-[0_0_8px_rgba(168,85,247,0.4)]" /> {t('pipeline.legend_explanation', 'Explanation')}</div>
+                            <div className="flex items-center gap-1.5"><div className="w-2 h-2 bg-emerald-500 rounded-full shadow-[0_0_8px_rgba(16,185,129,0.4)]" /> {t('pipeline.legend_validation', 'Validation Gate')}</div>
                         </div>
                     </div>
 
                     <div className="flex flex-col items-center gap-10">
                         {/* Main Pipeline - Vertical List */}
                         <div className="flex flex-col items-center w-full max-w-sm">
-                            <span className="text-[9px] text-slate-500 uppercase font-black mb-6 tracking-[0.3em] text-center">Main Transformation Pipeline</span>
+                            <span className="text-[9px] text-slate-500 uppercase font-black mb-6 tracking-[0.3em] text-center">{t('pipeline.main_pipeline', 'Main Transformation Pipeline')}</span>
                             <div className="flex flex-col items-center gap-4 w-full">
                                 {mainPipeline.map((compId, idx) => {
                                     const comp = components.find(c => c.id === compId);
@@ -213,7 +215,7 @@ export const PipelineTab = () => {
                             <div className="flex flex-col items-center">
                                 <div className="h-10 w-px bg-gradient-to-b from-slate-800 to-mcp/40" />
                                 <div className="w-1.5 h-1.5 border-b border-r border-mcp/40 rotate-45 mt-[-4px]" />
-                                <span className="text-[9px] text-mcp uppercase font-black mb-8 tracking-[0.3em] mt-3">Validation Side-Channel</span>
+                                <span className="text-[9px] text-mcp uppercase font-black mb-8 tracking-[0.3em] mt-3">{t('pipeline.validation_sidechannel', 'Validation Side-Channel')}</span>
                             </div>
 
                             <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6 w-full justify-center">
@@ -259,15 +261,15 @@ export const PipelineTab = () => {
                                         <Sparkles size={20} />
                                     </div>
                                     <div className="flex flex-col">
-                                        <span className="text-sm font-bold text-slate-300 tracking-tight">UI Rendering</span>
-                                        <span className="text-[9px] text-slate-600 uppercase font-bold tracking-widest mt-1">frontend</span>
+                                        <span className="text-sm font-bold text-slate-300 tracking-tight">{t('pipeline.ui_rendering', 'UI Rendering')}</span>
+                                        <span className="text-[9px] text-slate-600 uppercase font-bold tracking-widest mt-1">{t('pipeline.frontend', 'frontend')}</span>
                                     </div>
                                 </div>
                             </div>
                         </div>
 
                         <p className="text-center text-[10px] sm:text-[11px] text-slate-500 max-w-sm font-medium italic leading-relaxed">
-                            MCP explanations are generated after compilation and validated by Lingo before rendering.
+                            {t('pipeline.footer_note', 'MCP explanations are generated after compilation and validated by Lingo before rendering.')}
                         </p>
                     </div>
                 </div>

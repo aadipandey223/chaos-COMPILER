@@ -3,8 +3,10 @@ import { createPortal } from 'react-dom';
 import { Layers, Info } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MCP } from '../compiler/mcp';
+import { useI18n } from '../i18n/LanguageProvider';
 
 export const IRDiffView = ({ snapshots = [] }) => {
+    const { t } = useI18n();
     const [step, setStep] = useState(0);
     const [tooltipState, setTooltipState] = useState({
         visible: false,
@@ -18,10 +20,10 @@ export const IRDiffView = ({ snapshots = [] }) => {
     const prevSnapshot = (step > 0 ? snapshots[step - 1] : snapshots[0]) || { name: 'Empty', ir: [] };
 
     const getExplanationForMeta = (meta) => {
-        const exactMatch = MCP.getExplanation(meta, 'student');
+        const exactMatch = MCP.getExplanation(meta, 'student', {}, t);
         if (exactMatch && !exactMatch.startsWith("Transformation '")) return exactMatch;
         const map = { 'CHAOS_OPAQUE_PREDICATE': 'CHAOS_OPAQUE_PRED', 'CHAOS_CF_FLATTENING_LITE': 'CHAOS_CF_FLATTEN' };
-        return MCP.getExplanation(map[meta] || meta, 'student');
+        return MCP.getExplanation(map[meta] || meta, 'student', {}, t);
     };
 
     const handleMouseEnter = (e, meta) => {
@@ -63,7 +65,7 @@ export const IRDiffView = ({ snapshots = [] }) => {
                 {/* Header */}
                 <div className="px-6 py-4 border-b border-slate-800 flex items-center gap-3">
                     <Layers size={20} className="text-violet-400" />
-                    <h3 className="font-bold text-sm uppercase tracking-widest text-slate-200">Transformation Timeline</h3>
+                    <h3 className="font-bold text-sm uppercase tracking-widest text-slate-200">{t('ui.transformation_timeline', 'Transformation Timeline')}</h3>
                 </div>
 
                 <div className="flex-1 flex overflow-hidden">
@@ -97,7 +99,7 @@ export const IRDiffView = ({ snapshots = [] }) => {
 
                                     {/* Hover tooltip (Snapshot Name) */}
                                     <div className="absolute left-14 px-2 py-1 rounded bg-slate-800 border border-slate-700 text-[10px] text-slate-300 uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-50 pointer-events-none shadow-xl">
-                                        {snap.name}
+                                        {t(snap.name, snap.name)}
                                     </div>
                                 </button>
                             ))}
@@ -108,7 +110,7 @@ export const IRDiffView = ({ snapshots = [] }) => {
                     <div className="flex-1 flex flex-col bg-slate-950/40 p-6 overflow-hidden">
                         <div className="mb-4 flex items-center gap-3">
                             <span className="text-[10px] font-bold text-slate-500 bg-slate-800/50 px-2 py-1 rounded border border-slate-700/50">{step}</span>
-                            <h4 className="text-xs font-bold text-violet-300 uppercase tracking-widest">{currentSnapshot.name}</h4>
+                            <h4 className="text-xs font-bold text-violet-300 uppercase tracking-widest">{t(currentSnapshot.name, currentSnapshot.name)}</h4>
                         </div>
 
                         <div className="flex-1 overflow-y-auto custom-scrollbar bg-slate-900/40 rounded-xl border border-slate-800/50 p-4 shadow-inner">
@@ -183,7 +185,7 @@ export const IRDiffView = ({ snapshots = [] }) => {
                             <div className="flex items-center justify-between mb-2">
                                 <div className="flex items-center gap-2 text-mcp">
                                     <Info size={14} />
-                                    <span className="text-xs font-bold uppercase tracking-wider">Strategy Insight</span>
+                                    <span className="text-xs font-bold uppercase tracking-wider">{t('ui.strategy_insight', 'Strategy Insight')}</span>
                                 </div>
                                 <span className="text-[10px] font-mono text-slate-500">{tooltipState.meta}</span>
                             </div>

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     Zap,
     Users,
@@ -22,12 +22,18 @@ import Prism from 'prismjs';
 import 'prismjs/components/prism-clike';
 import 'prismjs/components/prism-c';
 import 'prismjs/themes/prism-tomorrow.css';
+import { useI18n } from './i18n/LanguageProvider';
+import { LanguageSwitcher } from './i18n/LanguageSwitcher';
 
-import { Lexer } from './compiler/lexer';
-import { Parser } from './compiler/parser';
-import { CodeGen } from './compiler/codegen';
-import { generateIR, applyChaos, executeIR } from './compiler/ir';
-import { diagnostics } from './compiler/diagnostics';
+import {
+    Lexer,
+    Parser,
+    CodeGen,
+    generateIR,
+    applyChaos,
+    executeIR,
+    diagnostics
+} from './compiler/index';
 import { LingoCompiler } from './compiler/lingo';
 
 import { EditorPanel } from './components/EditorPanel';
@@ -80,6 +86,7 @@ const TABS = [
 ];
 
 function App() {
+    const { locale, validationStatus: i18nStatus, t } = useI18n();
     const [activeTab, setActiveTab] = useState('editor');
     const [code, setCode] = useState(EXAMPLES[0]);
     const [intensity, setIntensity] = useState('medium');
@@ -92,10 +99,13 @@ function App() {
     const [originalIr, setOriginalIr] = useState([]);
     const [chaoticIr, setChaoticIr] = useState([]);
     const [assembly, setAssembly] = useState('');
+    const [machineCode, setMachineCode] = useState('');
+    const [outputFormat, setOutputFormat] = useState('assembly'); // 'assembly' or 'machine'
     const [executionOutput, setExecutionOutput] = useState(null);
     const [compilationError, setCompilationError] = useState(null);
     const [irSnapshots, setIrSnapshots] = useState([]);
     const [originalOutput, setOriginalOutput] = useState(null);
+    const [originalStdout, setOriginalStdout] = useState([]);
     const [stdout, setStdout] = useState([]);
 
     const [compilerDiagnostics, setCompilerDiagnostics] = useState([]);
@@ -116,8 +126,45 @@ function App() {
     const [copiedCode, setCopiedCode] = useState(false);
     const [copiedOutput, setCopiedOutput] = useState(false);
 
+    const [chaosConfig, setChaosConfig] = useState({
+        passes: {
+            numberEncoding: true,
+            substitution: true,
+            opaquePredicates: true,
+            flattening: true
+        },
+        customRules: []
+    });
+    const [ruleHits, setRuleHits] = useState({});
+
+    // Disable all chaos passes when intensity is 'none'
+    useEffect(() => {
+        if (intensity === 'none') {
+            setChaosConfig({
+                passes: {
+                    numberEncoding: false,
+                    substitution: false,
+                    opaquePredicates: false,
+                    flattening: false
+                }
+            });
+        }
+    }, [intensity]);
+
     const handleDismissIntro = () => {
         setShowIntro(false);
+    };
+
+    const handleDownloadCode = () => {
+        const content = outputFormat === 'assembly' ? assembly : machineCode;
+        const filename = outputFormat === 'assembly' ? 'output.txt' : 'machine output.txt';
+        const blob = new Blob([content], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        a.click();
+        URL.revokeObjectURL(url);
     };
 
     const startGuidedTour = () => {
@@ -197,23 +244,13 @@ function App() {
         setTimeout(() => setCopiedOutput(false), 2000);
     };
 
-    const [chaosConfig, setChaosConfig] = useState({
-        passes: {
-            numberEncoding: true,
-            substitution: true,
-            opaquePredicates: true,
-            flattening: true
-        },
-        customRules: []
-    });
-    const [ruleHits, setRuleHits] = useState({});
-
     const handleCompile = () => {
         setIsCompiling(true);
         setIsCompiled(false);
         setCompilationError(null);
         setIrSnapshots([]);
         setOriginalOutput(null);
+        setOriginalStdout([]);
         setStdout([]);
         setRuleHits({});
 
@@ -230,17 +267,71 @@ function App() {
             const ir = generateIR(generatedAst);
             setOriginalIr(ir);
 
-            // Execute Original for comparison
-            const origResult = executeIR(JSON.parse(JSON.stringify(ir)));
-            setOriginalOutput(origResult);
-
-            const { ir: transformedIr, snapshots, ruleHits: hits } = applyChaos(ir, intensity, undefined, chaosConfig);
+            const { ir: transformedIr, snapshots, ruleHits: hits, appliedPasses } = applyChaos(ir, intensity, undefined, chaosConfig);
             setChaoticIr(transformedIr);
             setIrSnapshots(snapshots);
             setRuleHits(hits || {});
 
+            // Generate diagnostics from applied passes
+            if (appliedPasses && appliedPasses.length > 0) {
+                appliedPasses.forEach(passName => {
+                    // Map pass names to MCP diagnostic IDs
+                    let diagnosticId;
+                    let params = { pass: passName, intensity };
+                    
+                    switch(passName) {
+                        case 'numberEncoding':
+                            diagnosticId = 'CHAOS_NUM_ENCODING';
+                            params = { orig: 'constants', enc: 'offset expressions', ...params };
+                            break;
+                        case 'substitution':
+                            diagnosticId = 'CHAOS_SUBST_ADD';
+                            params = { op: 'ADD', ...params };
+                            break;
+                        case 'opaquePredicates':
+                            diagnosticId = 'CHAOS_OPAQUE_PRED';
+                            params = { cond: 'x²+x', invariant: '(x² + x) mod 2 ≡ 0', ...params };
+                            break;
+                        case 'flattening':
+                            diagnosticId = 'CHAOS_CF_FLATTEN';
+                            break;
+                        case 'customRules':
+                            diagnosticId = 'CHAOS_CUSTOM_RULE';
+                            break;
+                        default:
+                            diagnosticId = `CHAOS_${passName.toUpperCase().replace(/([A-Z])/g, '_$1')}`;
+                    }
+                    
+                    diagnostics.emit(
+                        diagnosticId,
+                        `chaos.transform.${passName.toLowerCase()}`,
+                        'info',
+                        params
+                    );
+                });
+            }
+
+            // Execute both versions for comparison
+            const origStdoutArr = [];
+            const origResult = executeIR(JSON.parse(JSON.stringify(ir)), new Map(), origStdoutArr);
+            setOriginalOutput(origResult);
+            setOriginalStdout(origStdoutArr);
+            
+            const currentStdout = [];
+            const transResult = executeIR(transformedIr, new Map(), currentStdout);
+            setStdout(currentStdout);
+            diagnostics.emit(
+                origResult === transResult ? 'CHAOS_SEMANTIC_PRESERVED' : 'CHAOS_SEMANTIC_FAILED',
+                'chaos.verification',
+                origResult === transResult ? 'info' : 'error',
+                { original: origResult, result: transResult, preserved: origResult === transResult },
+                origResult === transResult 
+                    ? `Semantic preservation verified: original=${origResult}, transformed=${transResult}`
+                    : `SEMANTIC MISMATCH: original=${origResult} ≠ transformed=${transResult}`
+            );
+
             const currentDiag = LingoCompiler.injectTestFailure(
-                [...diagnostics.getDiagnostics()],
+                [...diagnostics.getAll()],
                 simulateLingoError
             );
 
@@ -249,12 +340,11 @@ function App() {
 
             const codegen = new CodeGen(generatedAst);
             const generatedAssembly = codegen.generate();
+            const generatedMachineCode = codegen.generateMachineCode();
             setAssembly(generatedAssembly);
+            setMachineCode(generatedMachineCode);
 
-            const currentStdout = [];
-            const result = executeIR(transformedIr, {}, currentStdout);
-            setExecutionOutput(result);
-            setStdout(currentStdout);
+            setExecutionOutput(transResult);
 
             setTimeout(() => {
                 setIsCompiling(false);
@@ -291,14 +381,21 @@ function App() {
                                 className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg object-contain mcp-glow bg-slate-900/50"
                             />
                             <div className="hidden xs:block">
-                                <span className="font-bold text-sm sm:text-lg text-white block leading-tight">Chaos Lab</span>
-                                <p className="text-[8px] sm:text-[10px] text-slate-400 font-medium">Compiler Transformation Laboratory</p>
+                                <span className="font-bold text-sm sm:text-lg text-white block leading-tight">{t('app.title', 'Chaos Lab')}</span>
+                                <p className="text-[8px] sm:text-[10px] text-slate-400 font-medium">{t('app.subtitle', 'Compiler Transformation Laboratory')}</p>
                             </div>
                         </div>
 
                         {/* Tabs */}
                         <div className="flex items-center gap-0.5 sm:gap-1 bg-slate-800/50 p-1 rounded-lg border border-slate-700 scale-90 sm:scale-100 origin-right sm:origin-center">
-                            {TABS.map((tab) => (
+                            {TABS.map((tab) => {
+                                const labelMap = {
+                                    'editor': t('ui.editor', 'Editor'),
+                                    'parse-tree': t('ui.parse_tree', 'Parse Tree'),
+                                    'pipeline': t('ui.pipeline', 'Pipeline'),
+                                    'orchestration': t('ui.orchestration', 'Chaos Orchestration')
+                                };
+                                return (
                                 <button
                                     key={tab.id}
                                     onClick={() => setActiveTab(tab.id)}
@@ -308,19 +405,23 @@ function App() {
                                         }`}
                                 >
                                     <tab.icon size={14} className="sm:w-[16px] sm:h-[16px]" />
-                                    <span className="hidden lg:inline">{tab.label}</span>
+                                    <span className="hidden lg:inline">{labelMap[tab.id] || tab.label}</span>
                                 </button>
-                            ))}
+                                );
+                            })}
                         </div>
 
-                        {/* Status (Hidden on very small screens, compact on mobile) */}
-                        <div className={`hidden sm:flex items-center gap-2 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full text-[10px] sm:text-xs font-bold border ${lingoReport.valid
-                            ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
-                            : 'bg-red-500/10 text-red-400 border-red-500/30'
-                            }`}>
-                            <Shield size={12} className="sm:w-[14px] sm:h-[14px]" />
-                            <span className="hidden md:inline">{lingoReport.valid ? 'Lingo Valid' : 'Validation Failed'}</span>
-                            <div className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full ${lingoReport.valid ? 'bg-emerald-400 animate-pulse' : 'bg-red-400'}`} />
+                        {/* Status & Language Switcher */}
+                        <div className="flex items-center gap-3">
+                            <div className={`hidden sm:flex items-center gap-2 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full text-[10px] sm:text-xs font-bold border ${lingoReport.valid
+                                ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
+                                : 'bg-red-500/10 text-red-400 border-red-500/30'
+                                }`}>
+                                <Shield size={12} className="sm:w-[14px] sm:h-[14px]" />
+                                <span className="hidden md:inline">{lingoReport.valid ? 'Lingo Valid' : 'Validation Failed'}</span>
+                                <div className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full ${lingoReport.valid ? 'bg-emerald-400 animate-pulse' : 'bg-red-400'}`} />
+                            </div>
+                            <LanguageSwitcher />
                         </div>
                     </div>
                 </div>
@@ -355,20 +456,47 @@ function App() {
 
                         {/* Middle Row */}
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                            {/* Execution Output */}
+                            {/* Original Execution Output */}
                             <div className="glass-panel p-5">
                                 <div className="flex items-center justify-between mb-3">
                                     <div className="flex items-center gap-2 text-slate-400">
-                                        <ShieldCheck size={18} className="text-lingo" />
-                                        <span className="text-sm font-semibold">Execution Result</span>
+                                        <ShieldCheck size={18} className="text-emerald-500" />
+                                        <span className="text-sm font-semibold">{t('ui.original', 'Original Output')}</span>
                                     </div>
-                                    <button onClick={handleCopyOutput} className="text-slate-500 hover:text-slate-300 p-2 hover:bg-slate-800 rounded-lg transition-all">
-                                        {copiedOutput ? <Check size={16} className="text-lingo" /> : <Copy size={16} />}
-                                    </button>
+                                    <span className="text-[9px] bg-emerald-500/10 text-emerald-400 px-2 py-1 rounded font-bold uppercase border border-emerald-500/30">Clean</span>
                                 </div>
-                                <div className="bg-slate-950 rounded-lg p-4 font-mono border border-slate-800 min-h-[120px] flex flex-col gap-3">
+                                <div className="bg-slate-950 rounded-lg p-4 font-mono border border-emerald-500/20 min-h-[120px] flex flex-col gap-3">
                                     <div className="flex flex-col gap-1">
-                                        <span className="text-[10px] text-slate-500 uppercase font-bold">Standard Output</span>
+                                        <span className="text-[10px] text-slate-500 uppercase font-bold">{t('ui.stdout', 'Standard Output')}</span>
+                                        <div className="text-sm text-slate-300">
+                                            {originalStdout.length > 0 ? (
+                                                originalStdout.map((line, i) => <div key={i}>{line}</div>)
+                                            ) : (
+                                                <span className="opacity-30 italic">No output</span>
+                                            )}
+                                        </div>
+                                    </div>
+                                    <div className="flex flex-col gap-1 mt-2 pt-2 border-t border-slate-800/50">
+                                        <span className="text-[10px] text-slate-500 uppercase font-bold">Return Value</span>
+                                        <div className="text-2xl font-bold text-emerald-400">
+                                            {originalOutput !== null ? originalOutput : '0'}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Transformed Execution Output */}
+                            <div className="glass-panel p-5">
+                                <div className="flex items-center justify-between mb-3">
+                                    <div className="flex items-center gap-2 text-slate-400">
+                                        <ShieldCheck size={18} className="text-mcp" />
+                                        <span className="text-sm font-semibold">{t('ui.transformed', 'Transformed Output')}</span>
+                                    </div>
+                                    <span className="text-[9px] bg-mcp/10 text-mcp px-2 py-1 rounded font-bold uppercase border border-mcp/30">Chaotic</span>
+                                </div>
+                                <div className="bg-slate-950 rounded-lg p-4 font-mono border border-mcp/20 min-h-[120px] flex flex-col gap-3">
+                                    <div className="flex flex-col gap-1">
+                                        <span className="text-[10px] text-slate-500 uppercase font-bold">{t('ui.stdout', 'Standard Output')}</span>
                                         <div className="text-sm text-slate-300">
                                             {stdout.length > 0 ? (
                                                 stdout.map((line, i) => <div key={i}>{line}</div>)
@@ -384,32 +512,62 @@ function App() {
                                         </div>
                                     </div>
                                 </div>
-                                <div className="flex items-center justify-between mt-3 px-1">
+                                <div className="flex items-center justify-center mt-3 px-1">
                                     <p className="text-[10px] text-slate-500 flex items-center gap-2">
                                         <CheckCircle size={12} className={executionOutput === originalOutput ? "text-emerald-500" : "text-red-500"} />
                                         Semantic Check: {executionOutput === originalOutput ? "Passed" : "Mismatch Rejected"}
                                     </p>
-                                    <span className="text-[10px] font-mono text-slate-600">
-                                        orig: {originalOutput || 0}
-                                    </span>
                                 </div>
                             </div>
+                        </div>
 
-                            {/* Assembly */}
-                            <div className="glass-panel flex flex-col min-h-[180px]">
-                                <div className="px-5 py-3 border-b border-slate-700 flex justify-between items-center">
-                                    <div className="flex items-center gap-2 text-slate-400">
-                                        <Binary size={18} />
-                                        <span className="text-sm font-semibold">Assembly Output</span>
+                        {/* Assembly / Machine Code Row */}
+                        <div className="glass-panel flex flex-col min-h-[180px]">
+                            <div className="px-5 py-3 border-b border-slate-700 flex justify-between items-center">
+                                <div className="flex items-center gap-2 text-slate-400">
+                                    <Binary size={18} />
+                                    <span className="text-sm font-semibold">
+                                        {outputFormat === 'assembly' ? t('ui.assembly_code', 'Assembly Output') : t('ui.machine_code', 'Machine Code Output')}
+                                    </span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    {/* Format Toggle */}
+                                    <div className="flex rounded-lg overflow-hidden border border-slate-700">
+                                        <button
+                                            onClick={() => setOutputFormat('assembly')}
+                                            className={`px-3 py-1.5 text-xs font-medium transition-colors ${
+                                                outputFormat === 'assembly'
+                                                    ? 'bg-indigo-500/20 text-indigo-400'
+                                                    : 'bg-slate-800 text-slate-400 hover:text-slate-200'
+                                            }`}
+                                        >
+                                            Assembly
+                                        </button>
+                                        <button
+                                            onClick={() => setOutputFormat('machine')}
+                                            className={`px-3 py-1.5 text-xs font-medium transition-colors ${
+                                                outputFormat === 'machine'
+                                                    ? 'bg-emerald-500/20 text-emerald-400'
+                                                    : 'bg-slate-800 text-slate-400 hover:text-slate-200'
+                                            }`}
+                                        >
+                                            {t('ui.machine_code', 'Machine Code')}
+                                        </button>
                                     </div>
-                                    <button className="flex items-center gap-2 text-slate-500 hover:text-slate-300 text-xs font-medium bg-slate-800 px-3 py-1.5 rounded-lg transition-colors">
+                                    <button 
+                                        onClick={handleDownloadCode}
+                                        className="flex items-center gap-2 text-slate-500 hover:text-slate-300 text-xs font-medium bg-slate-800 px-3 py-1.5 rounded-lg transition-colors hover:bg-slate-700"
+                                    >
                                         <Download size={14} />
-                                        Download
+                                        {t('ui.download', 'Download')}
                                     </button>
                                 </div>
-                                <div className="flex-1 overflow-auto p-4 font-mono text-sm text-slate-400 custom-scrollbar leading-relaxed">
-                                    <pre>{assembly || '; No output generated'}</pre>
-                                </div>
+                            </div>
+                            <div className="flex-1 overflow-auto p-4 font-mono text-sm text-slate-400 custom-scrollbar leading-relaxed">
+                                <pre>{outputFormat === 'assembly' 
+                                    ? (assembly || '; No output generated')
+                                    : (machineCode || '; No machine code generated')
+                                }</pre>
                             </div>
                         </div>
 

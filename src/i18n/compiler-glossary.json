@@ -1,0 +1,120 @@
+{
+  "metadata": {
+    "version": "1.0.0",
+    "domain": "compiler-education",
+    "validation_rules": "strict",
+    "description": "Compiler terminology must maintain conceptual accuracy, not literal translation"
+  },
+  "terms": {
+    "intermediate_representation": {
+      "abbreviation": "IR",
+      "context": "Specific technical concept in compiler design—not just 'middle representation'",
+      "translations": {
+        "es": {
+          "term": "Representación Intermedia",
+          "approved": true,
+          "verified_by": "CS faculty",
+          "note": "Standard term in Spanish CS literature"
+        },
+        "zh": {
+          "term": "中间表示",
+          "approved": true,
+          "verified_by": "CS faculty",
+          "note": "中间 (zhōngjiān) = intermediate, 表示 (biǎoshì) = representation"
+        },
+        "hi": {
+          "term": "इंटरमीडिएट प्रतिनिधित्व",
+          "approved": true,
+          "verified_by": "CS faculty",
+          "note": "Phonetic transliteration commonly used in Indian CS education"
+        }
+      }
+    },
+    "abstract_syntax_tree": {
+      "abbreviation": "AST",
+      "context": "Data structure representing program's syntactic structure",
+      "translations": {
+        "es": {
+          "term": "Árbol de Sintaxis Abstracta",
+          "approved": true
+        },
+        "zh": {
+          "term": "抽象语法树",
+          "approved": true
+        },
+        "hi": {
+          "term": "अमूर्त सिंटैक्स ट्री",
+          "approved": true
+        }
+      }
+    },
+    "opaque_predicate": {
+      "context": "Always-true condition that's difficult to analyze statically",
+      "translations": {
+        "es": {
+          "term": "Predicado Opaco",
+          "approved": true
+        },
+        "zh": {
+          "term": "不透明谓词",
+          "approved": true
+        },
+        "hi": {
+          "term": "अपारदर्शी विधेय",
+          "approved": true
+        }
+      }
+    },
+    "semantic_preservation": {
+      "context": "Behavioral equivalence guarantee—critical for Chaos Lab pedagogy",
+      "translations": {
+        "es": {
+          "term": "Preservación Semántica",
+          "approved": true
+        },
+        "zh": {
+          "term": "语义保持",
+          "approved": true
+        },
+        "hi": {
+          "term": "अर्थिक संरक्षण",
+          "approved": true
+        }
+      }
+    },
+    "control_flow_flattening": {
+      "context": "Obfuscation technique converting linear code to dispatcher-based control",
+      "translations": {
+        "es": {
+          "term": "Aplanamiento de Flujo de Control",
+          "approved": true
+        },
+        "zh": {
+          "term": "控制流扁平化",
+          "approved": true
+        },
+        "hi": {
+          "term": "नियंत्रण प्रवाह समतलीकरण",
+          "approved": true
+        }
+      }
+    },
+    "instruction_substitution": {
+      "context": "Replacing operations with algebraically equivalent sequences",
+      "translations": {
+        "es": {
+          "term": "Sustitución de Instrucciones",
+          "approved": true
+        },
+        "zh": {
+          "term": "指令替换",
+          "approved": true
+        },
+        "hi": {
+          "term": "निर्देश प्रतिस्थापन",
+          "approved": true
+        }
+      }
+    }
+  }
+}

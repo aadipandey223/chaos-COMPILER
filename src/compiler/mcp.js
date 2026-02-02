@@ -1,8 +1,10 @@
 /**
  * MCP - Multi-Agent / Context Provider Simulation
  * Provides depth-based explanations for chaos transformations.
+ * Now supports i18n through Lingo translation system.
  */
 
+// English fallback templates (used when translations not available)
 const EXPLANATIONS = {
     'CHAOS_SUBST_ADD': {
         student: (p) => `We replaced a simple '${p.op || '+'}' with a complex chain of XOR and AND operations. This hides the actual logic from anyone reading the raw binary, but the final result remains the same because (x+y) = (x^y) + 2*(x&y).`,
@@ -79,25 +81,53 @@ const EXPLANATIONS = {
     'Dead Branch': {
         student: "This code will NEVER run because the condition is always true. It's a fake path that only exists to confuse reverse engineers.",
         researcher: "Unreachable code block: Dead branch inserted as part of opaque predicate. Increases apparent complexity without affecting semantics."
+    },
+    'USER_CODE': {
+        student: "This is your original code, unchanged. It does exactly what you wrote!",
+        researcher: "Original user-authored instruction. Direct translation from source AST without transformation."
     }
 };
 
 export const MCP = {
-    getExplanation: (diagnosticId, mode = 'student', params = {}) => {
+    getExplanation: (diagnosticId, mode = 'student', params = {}, t = null) => {
+        // Try to get translation if t function is provided
+        if (t) {
+            const key = `mcp.${diagnosticId.toLowerCase()}.${mode}`;
+            const translation = t(key, null);
+            
+            if (translation && translation !== key) {
+                // Replace placeholders in translation
+                let result = translation;
+                if (params.op) result = result.replace('{op}', params.op);
+                if (params.orig !== undefined) result = result.replace('{orig}', params.orig);
+                if (params.enc) result = result.replace('{enc}', params.enc);
+                if (params.cond) result = result.replace('{cond}', params.cond);
+                if (params.invariant) result = result.replace('{invariant}', params.invariant);
+                return result;
+            }
+        }
+        
+        // Fallback to hardcoded English explanations
         const entry = EXPLANATIONS[diagnosticId];
-        if (!entry) return `Transformation '${diagnosticId}' applied. Semantic equivalence maintained.`;
+        if (!entry) {
+            if (t) {
+                return t('mcp.fallback_detailed', `Transformation '{id}' applied. Semantic equivalence maintained.`).replace('{id}', diagnosticId);
+            }
+            return `Transformation '${diagnosticId}' applied. Semantic equivalence maintained.`;
+        }
 
         const template = entry[mode];
         if (typeof template === 'function') {
             try {
-                // Strict check: if it's a template but params are missing/empty, fall back or return null
-                // This enforces the "No Example Drift" rule at the generation level
                 return template(params);
             } catch (e) {
+                if (t) {
+                    return t('mcp.error', `[MCP Error] Failed to generate explanation for {id}`).replace('{id}', diagnosticId);
+                }
                 return `[MCP Error] Failed to generate explanation for ${diagnosticId}`;
             }
         }
 
-        return template || `Transformation '${diagnosticId}' applied.`;
+        return template || (t ? t('mcp.fallback_detailed', `Transformation '{id}' applied.`).replace('{id}', diagnosticId) : `Transformation '${diagnosticId}' applied.`);
     }
 };

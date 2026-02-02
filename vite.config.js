@@ -1,6 +1,7 @@
 import base44 from "@base44/vite-plugin"
 import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vite'
+import path from 'path'
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -14,5 +15,29 @@ export default defineConfig({
       visualEditAgent: true
     }),
     react(),
-  ]
+  ],
+  resolve: {
+    alias: {
+      '@': path.resolve(__dirname, './src'),
+      '@/compiler': path.resolve(__dirname, './src/compiler'),
+      '@/components': path.resolve(__dirname, './src/components'),
+      '@/store': path.resolve(__dirname, './src/store'),
+      '@/types': path.resolve(__dirname, './src/types'),
+      '@/lingo': path.resolve(__dirname, './src/lingo'),
+      '@/mcp': path.resolve(__dirname, './src/mcp'),
+    },
+  },
+  optimizeDeps: {
+    include: ['monaco-editor'],
+  },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          monaco: ['monaco-editor', '@monaco-editor/react'],
+          vendor: ['react', 'react-dom', 'zustand', 'framer-motion'],
+        },
+      },
+    },
+  },
 });

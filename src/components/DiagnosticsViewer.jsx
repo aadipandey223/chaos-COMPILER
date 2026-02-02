@@ -1,8 +1,10 @@
 import { AlertCircle, Info, Bug, Shield } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { MCP } from '../compiler/mcp';
+import { useI18n } from '../i18n/LanguageProvider';
 
 export const DiagnosticsViewer = ({ diagnostics, mode = 'student' }) => {
+    const { t } = useI18n();
 
     if (!diagnostics || diagnostics.length === 0) return null;
 
@@ -55,7 +57,7 @@ export const DiagnosticsViewer = ({ diagnostics, mode = 'student' }) => {
                             {d.id === 'COMPILE_CLEAN' && `Clean compilation (${d.params?.irCount || 0} IR instructions)`}
                         </p>
                         <p className={`text-[11px] leading-relaxed p-2 rounded border ${mode === 'researcher' ? 'bg-indigo-50/50 border-indigo-100 text-indigo-900 italic' : 'bg-white/50 border-slate-100 text-slate-600'}`}>
-                            {MCP.getExplanation(d.id, mode)}
+                            {MCP.getExplanation(d.id, mode, d.params || {}, t)}
                         </p>
                         {d.params && Object.keys(d.params).length > 0 && (
 

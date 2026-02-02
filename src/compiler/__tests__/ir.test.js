@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { generateIR, applyChaos, executeIR } from '../ir';
+import { generateIR, applyChaos, executeIR } from '../index';
 import { Lexer } from '../lexer';
 import { Parser } from '../parser';
 
@@ -162,49 +162,49 @@ describe('Chaos Transformations', () => {
         const highIntensity = applyChaos(JSON.parse(JSON.stringify(baseIR)), 'high', 123, config);
         
         // High intensity should add more transformations (usually)
-        expect(lowIntensity.transforms.length).toBeDefined();
-        expect(highIntensity.transforms.length).toBeDefined();
+        expect(lowIntensity.appliedPasses).toBeDefined();
+        expect(highIntensity.appliedPasses).toBeDefined();
     });
 });
 
 describe('IR Execution', () => {
     it('should execute simple return statement', () => {
-        const ir = [
+        const ir = /** @type {any[]} */ ([
             { op: 'RETURN', value: 42 }
-        ];
+        ]);
         
         const result = executeIR(ir);
         expect(result).toBe(42);
     });
 
     it('should execute variable assignment and return', () => {
-        const ir = [
+        const ir = /** @type {any[]} */ ([
             { op: 'ASSIGN', target: 'x', value: 10 },
             { op: 'RETURN', value: 'x' }
-        ];
+        ]);
         
         const result = executeIR(ir);
         expect(result).toBe(10);
     });
 
     it('should execute arithmetic operations', () => {
-        const ir = [
+        const ir = /** @type {any[]} */ ([
             { op: 'ADD', target: 'sum', left: 5, right: 10 },
             { op: 'RETURN', value: 'sum' }
-        ];
+        ]);
         
         const result = executeIR(ir);
         expect(result).toBe(15);
     });
 
     it('should handle multiple operations', () => {
-        const ir = [
+        const ir = /** @type {any[]} */ ([
             { op: 'ASSIGN', target: 'a', value: 5 },
             { op: 'ASSIGN', target: 'b', value: 3 },
             { op: 'MUL', target: 'product', left: 'a', right: 'b' },
             { op: 'ADD', target: 'result', left: 'product', right: 10 },
             { op: 'RETURN', value: 'result' }
-        ];
+        ]);
         
         const result = executeIR(ir);
         expect(result).toBe(25); // (5 * 3) + 10

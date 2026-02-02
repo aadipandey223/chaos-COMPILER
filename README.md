@@ -102,8 +102,43 @@ This project uses Lingo.dev strictly for **validation**. It enforces:
 
 If a diagnostic fails validation, the build process flags it, ensuring no unverified information is presented to the user. Lingo.dev acts as a hard validation gate in the pipeline; if validation fails, diagnostics are blocked from rendering. **This project uses Lingo.dev Compiler for validation only; no translation or localization APIs are invoked.**
 
+**Error Handling & Debugging:**
+The Lingo integration includes comprehensive error handling with automatic retries, timeout protection, and detailed diagnostics. Run `__lingoDiagnostics()` in browser console to check system health. See [Lingo Debugging Guide](./docs/LINGO-DEBUGGING.md) for troubleshooting.
+
 ### MCP (Untrusted Layer)
 The MCP layer generates the explanatory text for transformations. To prevent hallucinations or incorrect terminology, all MCP output flows through the Lingo validation gate before rendering.
+
+### 🌍 Internationalization (i18n)
+The validation-gated trust model now extends to **multilingual education**. The i18n system ensures compiler terminology maintains pedagogical accuracy across languages.
+
+**Supported Locales:**
+- 🇬🇧 **English** (Source - Verified)
+- 🇪🇸 **Español** (Spanish - Validated)
+- 🇨🇳 **中文** (Chinese - Validated)
+- 🇮🇳 **हिंदी** (Hindi - Validated)
+
+**Features:**
+- **Glossary-Protected Translation**: Technical terms like "IR" and "Opaque Predicate" maintain conceptual accuracy (not literal translation)
+- **Validation Status Indicators**: UI shows whether translations are verified, loading, or errored
+- **Locale Persistence**: User's language preference saved across sessions
+- **Automatic Fallback**: If translation validation fails, system shows English with warning (never broken pedagogy)
+
+**Architecture:**
+```mermaid
+graph LR
+    A[MCP Explanation EN] --> B[Lingo Validator]
+    B --> C[Translation Memory]
+    C --> D[Glossary Enforcement]
+    D --> E[Validated Translation]
+```
+
+**Usage:**
+1. Click the globe icon 🌐 in the navigation bar
+2. Select your preferred language
+3. Technical explanations update with validated translations
+4. Glossary badge shows verification status
+
+See [I18N-ARCHITECTURE.md](docs/I18N-ARCHITECTURE.md) for complete documentation.
 
 ---
 
@@ -180,6 +215,17 @@ This mode proves that AI-generated content is treated as untrusted until verifie
 
 ---
 
+## 📚 Documentation
+
+- **[Testing Guide](./TESTING.md)** - Comprehensive testing documentation and coverage reports
+- **[I18n Architecture](./docs/I18N-ARCHITECTURE.md)** - Internationalization system design
+- **[Lingo Debugging](./docs/LINGO-DEBUGGING.md)** - Troubleshooting guide for Lingo CLI integration
+- **[Technical Documentation](./TECHNICAL-DOCUMENTATION.md)** - Detailed technical specifications
+- **[Implementation Summary](./IMPLEMENTATION-SUMMARY.md)** - Project implementation overview
+
+---
+
 ## License
 
 MIT
+
