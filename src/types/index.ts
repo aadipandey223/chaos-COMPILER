@@ -239,6 +239,7 @@ export interface IRInstruction {
   left?: string | number;
   right?: string | number;
   value?: string | number | boolean;
+  args?: (string | number)[];
   test?: IRInstruction | ASTNode;
   consequent?: IRInstruction[];
   alternate?: IRInstruction[];
@@ -372,7 +373,7 @@ export interface CompilerState {
   snapshots: IRSnapshot[];
 
   // Diagnostics
-  diagnostics: Diagnostic[];
+  allDiagnostics: Diagnostic[];
   lingoReport: LingoValidationReport;
 
   // Execution

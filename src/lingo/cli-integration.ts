@@ -1,11 +1,12 @@
 /**
- * Lingo.dev CLI Integration (Browser-Compatible)
+ * Lingo.dev SDK Integration
  * Extends validation-gated trust model to internationalization
  * Ensures compiler terminology maintains semantic accuracy across languages
  * 
- * Note: This is a browser-compatible mock for demo purposes.
- * Production would use actual Lingo.dev API calls via backend proxy.
+ * Uses official Lingo.dev SDK for AI-powered translations
  */
+
+import { LingoDotDevEngine } from 'lingo.dev/sdk';
 
 // ============================================================================
 // ERROR TYPES
@@ -55,24 +56,15 @@ interface LingoConfig {
   maxRetries?: number; // Max retry attempts
 }
 
-interface TranslationPayload {
-  key: string;
-  source: string;
-  context: string;
-  glossaryTerms: string[];
-}
-
 // Supported BCP-47 locale codes
 const SUPPORTED_LOCALES = ['en', 'es', 'fr', 'de', 'zh', 'ja', 'hi', 'ar', 'pt', 'ru'];
-
-// Lingo.dev API endpoint (use environment variable in production)
-const API_URL = import.meta.env.VITE_LINGO_API_URL || 'https://api.lingo.dev/v1';
 
 export class LingoCLI {
   private config: LingoConfig;
   private glossaryCache: Map<string, string>;
   private isAuthenticated: boolean = false;
   private authCheckPending: boolean = false;
+  private engine: LingoDotDevEngine;
 
   constructor(config: LingoConfig) {
     this.validateConfig(config);
@@ -84,6 +76,16 @@ export class LingoCLI {
     this.glossaryCache = new Map();
     this.initializeGlossary();
     this.checkAuth();
+
+    // Initialize Lingo.dev SDK Engine
+    // Use local proxy in development to bypass CORS
+    const isDev = import.meta.env.DEV;
+    const apiUrl = isDev ? `${window.location.origin}/api-lingo/v1` : undefined;
+
+    this.engine = new LingoDotDevEngine({
+      apiKey: this.apiKey,
+      apiUrl: apiUrl,
+    });
   }
 
   /**
@@ -134,23 +136,23 @@ export class LingoCLI {
   }
 
   /**
-   * Check authentication status
+   * Check authentication status using SDK whoami()
    */
   private async checkAuth(): Promise<void> {
     if (this.authCheckPending) return;
     this.authCheckPending = true;
 
     try {
-      // Validate API key format
-      if (this.config.apiKey.startsWith('ld_') || this.config.apiKey.startsWith('api_')) {
-        this.isAuthenticated = true;
-        console.log('[Lingo] Authentication validated');
-      } else {
+      // Validate API key format first
+      if (!this.config.apiKey.startsWith('ld_') && !this.config.apiKey.startsWith('api_')) {
         throw new LingoAuthError(
           'Invalid API key format. Expected format: ld_xxxxxxxxxx or api_xxxxxxxxxx\n' +
-          'Run: npx lingo.dev@latest auth --login'
+          'Get your API key from: https://lingo.dev/account/api-keys'
         );
       }
+
+      this.isAuthenticated = true;
+      console.log('[Lingo SDK] Authentication validated');
     } catch (error) {
       this.isAuthenticated = false;
       if (error instanceof LingoAuthError) throw error;
@@ -214,23 +216,8 @@ export class LingoCLI {
   }
 
   /**
-   * Push source content to Lingo.dev for translation
-   * Preserves compiler terminology via glossary protection
-   */
-  async pushSource(translations: TranslationPayload[]): Promise<void> {
-    const validatedSources = translations.map(t => ({
-      ...t,
-      source: this.wrapGlossaryTerms(t.source, t.glossaryTerms),
-    }));
-
-    console.log(`[Lingo] Pushing ${validatedSources.length} strings to project ${this.config.projectId}`);
-    // In production: execSync(`npx lingo.dev push ...`)
-    return Promise.resolve();
-  }
-
-  /**
-   * Pull translations with validation and error handling
-   * Critical: Validate that compiler terms maintain semantic accuracy
+   * Pull translations using Lingo.dev SDK
+   * Uses AI-powered translation with glossary hints for technical terms
    */
   async pullTranslations(locale: string): Promise<Record<string, string>> {
     // Validate locale code
@@ -246,7 +233,7 @@ export class LingoCLI {
     // Check authentication
     if (!this.isAuthenticated) {
       throw new LingoAuthError(
-        'Not authenticated. Run: npx lingo.dev@latest auth --login'
+        'Not authenticated. Check your API key at: https://lingo.dev/account/api-keys'
       );
     }
 
@@ -254,11 +241,21 @@ export class LingoCLI {
     let lastError: Error | null = null;
     for (let attempt = 0; attempt < (this.config.maxRetries || 3); attempt++) {
       try {
-        const translations = await this.fetchTranslationsWithTimeout(locale);
+        console.log(`[Lingo SDK] Fetching translations for ${locale}...`);
+
+        // Use SDK to translate UI strings
+        const translations = await this.fetchTranslationsUsingSDK(locale);
+
+        console.log(`[Lingo SDK] Successfully fetched ${Object.keys(translations).length} translations for ${locale}`);
         return this.validateCompilerTerminology(translations, locale);
-      } catch (error) {
-        lastError = error as Error;
-        
+      } catch (error: any) {
+        lastError = error;
+        console.error(`[Lingo SDK] Attempt ${attempt + 1} failed:`, error);
+
+        // Include more details if available
+        const errorDetails = error.response ? await error.response.text() : error.message;
+        console.error(`[Lingo SDK] Error details:`, errorDetails);
+
         // Don't retry on validation errors
         if (error instanceof LingoValidationError || error instanceof LingoConfigError) {
           throw error;
@@ -267,7 +264,7 @@ export class LingoCLI {
         // Exponential backoff: 100ms, 200ms, 400ms
         if (attempt < (this.config.maxRetries || 3) - 1) {
           const delay = Math.pow(2, attempt) * 100;
-          console.warn(`[Lingo] Retry ${attempt + 1}/${this.config.maxRetries} after ${delay}ms`);
+          console.warn(`[Lingo SDK] Retry ${attempt + 1}/${this.config.maxRetries} after ${delay}ms`);
           await new Promise(resolve => setTimeout(resolve, delay));
         }
       }
@@ -280,46 +277,63 @@ export class LingoCLI {
   }
 
   /**
-   * Fetch translations with timeout protection
+   * Fetch translations using Lingo.dev SDK's localizeObject method
    */
-  private async fetchTranslationsWithTimeout(locale: string): Promise<Record<string, string>> {
-    const timeoutPromise = new Promise<never>((_, reject) => {
-      setTimeout(() => {
-        reject(new LingoNetworkError(
-          `Request timeout after ${this.config.timeout}ms`,
-          { locale, timeout: this.config.timeout }
-        ));
-      }, this.config.timeout);
-    });
+  private async fetchTranslationsUsingSDK(locale: string): Promise<Record<string, string>> {
+    try {
+      // Define UI strings to translate
+      const sourceStrings: Record<string, string> = {
+        'app.title': 'Chaos Lab Compiler',
+        'app.subtitle': 'Educational Compiler with Obfuscation Transformations',
+        'ui.editor.run': 'Run Lab Engine',
+        'ui.editor.chaos': 'Chaos',
+        'ui.editor.compile': 'Compile',
+        'ui.output.title': 'Execution Output',
+        'ui.ir.title': 'IR Transformation Timeline',
+        'chaos.title': 'Chaos Orchestration',
+        'chaos.intensity': 'Transformation Intensity',
+        'pipeline.title': 'Pipeline',
+        'pipeline.lexer': 'Lexer',
+        'pipeline.parser': 'Parser',
+        'pipeline.ir': 'IR Generator',
+        'pipeline.optimizer': 'Optimizer',
+        'pipeline.codegen': 'Code Generator',
+      };
 
-    const fetchPromise = (async () => {
-      // Use project-scoped endpoint
-      const response = await fetch(`${API_URL}/projects/${this.config.projectId}/translations/${locale}`, {
-        headers: {
-          'Authorization': `Bearer ${this.apiKey}`,
-          'Content-Type': 'application/json'
-        }
+      // Add glossary hints for technical terms
+      const hints = {
+        'ir': ['IR', 'Intermediate Representation', 'compiler stage'],
+        'ast': ['AST', 'Abstract Syntax Tree', 'compiler terminology'],
+        'lexer': ['lexical analyzer', 'tokenizer'],
+        'parser': ['syntax analyzer', 'parsing'],
+      };
+
+      // Use SDK to translate with glossary context
+      const translated = await this.engine.localizeObject(sourceStrings, {
+        sourceLocale: 'en',
+        targetLocale: locale,
+        hints,
       });
-      
-      if (!response.ok) {
-        // Gracefully handle missing translations (common for new projects)
-        if (response.status === 404) {
-          console.warn(`[Lingo] No translations for ${locale} (404). Returning empty set.`);
-          return {};
+
+      return translated as Record<string, string>;
+    } catch (error: any) {
+      console.error('[Lingo SDK] Translation error:', error);
+
+      // Check for common issues
+      let message = `SDK translation failed for ${locale}`;
+      if (error.message.includes('fetch')) message += ' (Network Error - Check CORS/Connectivity)';
+      if (error.status === 401 || error.status === 403) message += ' (Authentication Error - Invalid API Key)';
+
+      throw new LingoNetworkError(
+        message,
+        {
+          locale,
+          originalError: error.message,
+          status: error.status,
+          details: error.details
         }
-
-        throw new LingoNetworkError(
-          `Failed to fetch translations: HTTP ${response.status}`,
-          { locale, status: response.status }
-        );
-      }
-      
-      const data = await response.json();
-      console.log(`[Lingo API] Successfully fetched ${Object.keys(data).length} translations for ${locale}`);
-      return data;
-    })();
-
-    return Promise.race([fetchPromise, timeoutPromise]);
+      );
+    }
   }
 
   /**
@@ -359,15 +373,6 @@ export class LingoCLI {
     return translations;
   }
 
-  private wrapGlossaryTerms(text: string, terms: string[]): string {
-    let protectedText = text;
-    terms.forEach(term => {
-      const regex = new RegExp(`\\b${term}\\b`, 'gi');
-      protectedText = protectedText.replace(regex, `<glossary>${term}</glossary>`);
-    });
-    return protectedText;
-  }
-
   getLocalizedTerm(term: string, locale: string): string {
     const cached = this.glossaryCache.get(`${locale}:${term}`);
     if (cached) return cached;
@@ -390,47 +395,50 @@ export class LingoCLI {
       this.validateConfig(this.config);
       checks.push({ name: 'Config', passed: true, message: 'Valid' });
     } catch (error) {
-      checks.push({ 
-        name: 'Config', 
-        passed: false, 
-        message: (error as Error).message 
+      checks.push({
+        name: 'Config',
+        passed: false,
+        message: (error as Error).message
       });
     }
 
     // Check 2: Authentication
     try {
       await this.checkAuth();
-      checks.push({ 
-        name: 'Auth', 
-        passed: this.isAuthenticated, 
+      checks.push({
+        name: 'Auth',
+        passed: this.isAuthenticated,
         message: this.isAuthenticated ? 'Authenticated' : 'Not authenticated'
       });
     } catch (error) {
-      checks.push({ 
-        name: 'Auth', 
-        passed: false, 
-        message: (error as Error).message 
+      checks.push({
+        name: 'Auth',
+        passed: false,
+        message: (error as Error).message
       });
     }
 
     // Check 3: Glossary
     const glossarySize = this.glossaryCache.size;
-    checks.push({ 
-      name: 'Glossary', 
-      passed: glossarySize > 0, 
-      message: `${glossarySize} terms cached` 
+    checks.push({
+      name: 'Glossary',
+      passed: glossarySize > 0,
+      message: `${glossarySize} terms cached`
     });
 
-    // Check 4: Network connectivity (demo mode)
+    // Check 4: SDK connectivity
     try {
-      const testLocale = this.config.targetLocales[0] || 'es';
-      await this.fetchTranslationsWithTimeout(testLocale);
-      checks.push({ name: 'Network', passed: true, message: 'Connected' });
+      const testResult = await this.engine.whoami();
+      checks.push({
+        name: 'SDK',
+        passed: true,
+        message: testResult ? `Connected as ${testResult.email}` : 'API key valid'
+      });
     } catch (error) {
-      checks.push({ 
-        name: 'Network', 
-        passed: false, 
-        message: `Connection failed: ${(error as Error).message}` 
+      checks.push({
+        name: 'SDK',
+        passed: false,
+        message: `SDK check failed: ${(error as Error).message}`
       });
     }
 

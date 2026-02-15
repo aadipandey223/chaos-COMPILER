@@ -18,67 +18,160 @@ import { verifySemanticPreservation } from '../compiler/ir-executor';
 import { applyChaos, CHAOS_PRESETS, ChaosPreset } from '../compiler/chaos-engine';
 import { diagnostics, emitSemanticVerificationDiagnostic } from '../compiler/diagnostics';
 import { generateValidationReport } from '../lingo/validator';
+import { MCP } from '../mcp';
 
 // ============================================================================
 // EXAMPLE CODE
 // ============================================================================
 
 export const EXAMPLES = {
-  arithmetic: {
-    label: 'Arithmetic',
-    icon: '🔢',
-    code: `// Arithmetic Example
+  fibonacci: {
+    label: 'Fibonacci Recursion',
+    icon: '🌀',
+    code: `// Recursive Fibonacci
+int fib(int n) {
+  if (n <= 1) {
+    return n;
+  }
+  return fib(n - 1) + fib(n - 2);
+}
+
 int main() {
-  int a = 10;
-  int b = 20;
-  int result = a + b;
+  int result = fib(8);
   return result;
 }`,
-    description: 'Basic math operations with addition',
+    description: 'Recursive function calls - Advanced',
   },
-  loops: {
-    label: 'Loops',
+  nestedLoops: {
+    label: 'Nested Loops',
     icon: '🔄',
-    code: `// Loop Example
+    code: `// Matrix Multiplication Pattern
 int main() {
   int sum = 0;
-  int i = 1;
-  while (i <= 5) {
-    sum = sum + i;
+  int i = 0;
+  int j = 0;
+  
+  while (i < 5) {
+    j = 0;
+    while (j < 5) {
+      sum = sum + (i * j);
+      j = j + 1;
+    }
     i = i + 1;
   }
   return sum;
 }`,
-    description: 'Iteration and accumulation',
+    description: 'Double nested loops - Advanced',
   },
-  branching: {
-    label: 'Branching',
+  complexBranching: {
+    label: 'Complex Branching',
     icon: '🔀',
-    code: `// Branching Example
-int main() {
-  int x = 15;
-  int result;
-  if (x > 10) {
-    result = x * 2;
+    code: `// Complex Decision Tree
+int classify(int score) {
+  int grade;
+  if (score >= 90) {
+    grade = 4;
   } else {
-    result = x + 5;
+    if (score >= 80) {
+      grade = 3;
+    } else {
+      if (score >= 70) {
+        grade = 2;
+      } else {
+        grade = 1;
+      }
+    }
+  }
+  return grade;
+}
+
+int main() {
+  int result = classify(85);
+  return result;
+}`,
+    description: 'Nested conditionals - Advanced',
+  },
+  bitwiseOps: {
+    label: 'Bitwise Algorithms',
+    icon: '⚡',
+    code: `// Bitwise Power of Two Check
+int isPowerOfTwo(int n) {
+  if (n <= 0) {
+    return 0;
+  }
+  return (n & (n - 1)) == 0;
+}
+
+int main() {
+  int test1 = isPowerOfTwo(16);
+  int test2 = isPowerOfTwo(15);
+  int result = test1 + test2;
+  return result;
+}`,
+    description: 'Bitwise operations - Expert',
+  },
+  factorial: {
+    label: 'Factorial Loop',
+    icon: '📐',
+    code: `// Iterative Factorial
+int factorial(int n) {
+  int result = 1;
+  int i = 1;
+  while (i <= n) {
+    result = result * i;
+    i = i + 1;
   }
   return result;
-}`,
-    description: 'Conditional logic with if/else',
-  },
-  obfuscation: {
-    label: 'Obfuscation Demo',
-    icon: '🔒',
-    code: `// Obfuscation Demo
+}
+
 int main() {
-  int a = 5;
-  int b = 3;
-  int c = (a + b) * 2;
-  int result = c - a;
+  int result = factorial(6);
   return result;
 }`,
-    description: 'Complex transformations showcase',
+    description: 'Factorial computation - Intermediate',
+  },
+  primeCheck: {
+    label: 'Prime Number',
+    icon: '🔢',
+    code: `// Prime Number Check
+int isPrime(int n) {
+  if (n <= 1) {
+    return 0;
+  }
+  int i = 2;
+  while (i * i <= n) {
+    if (n % i == 0) {
+      return 0;
+    }
+    i = i + 1;
+  }
+  return 1;
+}
+
+int main() {
+  int result = isPrime(17);
+  return result;
+}`,
+    description: 'Prime detection algorithm - Expert',
+  },
+  obfuscation: {
+    label: 'Heavy Obfuscation',
+    icon: '🔒',
+    code: `// Complex Calculation
+int compute(int x, int y) {
+  int temp1 = (x * 2) + (y * 3);
+  int temp2 = (temp1 & 15) | (y << 2);
+  int temp3 = temp2 ^ (x + y);
+  return temp3;
+}
+
+int main() {
+  int a = 7;
+  int b = 11;
+  int result = compute(a, b);
+  return result;
+}`,
+    description: 'Maximum chaos transformations - Expert',
   },
 } as const;
 
@@ -150,7 +243,7 @@ export const useCompilerStore = create<CompilerStore>()(
     (set, get) => ({
       // Initial State
       mode: 'student',
-      code: EXAMPLES.arithmetic.code,
+      code: EXAMPLES.factorial.code,
       isCompiling: false,
       isCompiled: false,
       compilationError: null,
@@ -196,12 +289,12 @@ export const useCompilerStore = create<CompilerStore>()(
         const presetConfig = CHAOS_PRESETS[preset];
         if (presetConfig) {
           // Create a mutable copy
-          set({ 
-            chaosConfig: { 
+          set({
+            chaosConfig: {
               passes: { ...presetConfig.passes },
               customRules: [...presetConfig.customRules],
               seed: presetConfig.seed,
-            } 
+            }
           });
         }
       },
@@ -255,10 +348,12 @@ export const useCompilerStore = create<CompilerStore>()(
             verification.match
           );
 
-          // Get all diagnostics
-          let allDiags = diagnostics.getAll();
-
-
+          // Get all diagnostics and enrich with MCP explanations
+          const mode = get().mode;
+          let allDiags = diagnostics.getAll().map(d => ({
+            ...d,
+            explanation: MCP.getExplanation(d.id, mode, d.params)
+          }));
 
           // Validate with Lingo
           const lingoReport = generateValidationReport(allDiags);

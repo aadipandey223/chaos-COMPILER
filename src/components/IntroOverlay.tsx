@@ -2,7 +2,12 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ShieldCheck, Brain, Zap, Sparkles, ArrowRight, Play, Target } from 'lucide-react';
 
-export const IntroOverlay = ({ onDismiss, onStartGuidedTour }) => {
+interface IntroOverlayProps {
+    onDismiss: () => void;
+    onStartGuidedTour: () => void;
+}
+
+export const IntroOverlay: React.FC<IntroOverlayProps> = ({ onDismiss, onStartGuidedTour }) => {
     const [showQuickValue, setShowQuickValue] = useState(true);
     return (
         <motion.div
@@ -15,11 +20,11 @@ export const IntroOverlay = ({ onDismiss, onStartGuidedTour }) => {
                 initial={{ scale: 0.9, y: 20, opacity: 0 }}
                 animate={{ scale: 1, y: 0, opacity: 1 }}
                 transition={{ type: "spring", damping: 25, stiffness: 300 }}
-                className="max-w-xl w-full glass-panel p-6 sm:p-8 relative border-lingo/30 shadow-[0_0_50px_rgba(0,180,216,0.1)] flex flex-col items-center mx-4"
+                className="max-w-xl w-full glass-panel p-6 sm:p-8 relative border-indigo-500/30 shadow-[0_0_50px_rgba(0,180,216,0.1)] flex flex-col items-center mx-4"
             >
                 {/* Background Glows (Inside the box) */}
-                <div className="absolute top-0 left-0 w-32 h-32 bg-lingo/10 rounded-full blur-[60px] pointer-events-none" />
-                <div className="absolute bottom-0 right-0 w-32 h-32 bg-mcp/10 rounded-full blur-[60px] pointer-events-none" />
+                <div className="absolute top-0 left-0 w-32 h-32 bg-indigo-500/10 rounded-full blur-[60px] pointer-events-none" />
+                <div className="absolute bottom-0 right-0 w-32 h-32 bg-purple-500/10 rounded-full blur-[60px] pointer-events-none" />
 
                 <div className="relative z-10 text-center w-full space-y-4 sm:space-y-6">
                     {/* 10-Second Value Proposition */}
@@ -36,7 +41,7 @@ export const IntroOverlay = ({ onDismiss, onStartGuidedTour }) => {
                                     <h3 className="text-xl sm:text-2xl font-black text-white">Why This Matters</h3>
                                 </div>
                                 <p className="text-base sm:text-lg text-slate-200 leading-relaxed mb-4">
-                                    <strong className="text-white">Watch code transform in real-time.</strong><br/>
+                                    <strong className="text-white">Watch code transform in real-time.</strong><br />
                                     See how compilers obfuscate programs while preserving behavior.
                                 </p>
                                 <div className="grid grid-cols-3 gap-3 text-xs">
@@ -77,7 +82,7 @@ export const IntroOverlay = ({ onDismiss, onStartGuidedTour }) => {
                             />
                             <h2 className="text-2xl sm:text-4xl font-bold text-white tracking-tight text-center">Chaos Lab — Compiler Transformation Laboratory</h2>
                             <p className="text-slate-400 text-xs sm:text-sm leading-relaxed max-w-sm mx-auto mt-2 px-2">
-                                A research environment where <span className="text-white font-semibold">AI explains what's happening</span>, and <span className="text-lingo font-extrabold tracking-wide">Lingo.dev enforces truth</span>.
+                                A research environment where <span className="text-white font-semibold">AI explains what's happening</span>, and <span className="text-indigo-400 font-extrabold tracking-wide">Lingo.dev enforces truth</span>.
                             </p>
                         </motion.div>
                     )}
@@ -86,7 +91,7 @@ export const IntroOverlay = ({ onDismiss, onStartGuidedTour }) => {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4 text-left">
                         <div className="p-3 sm:p-4 bg-slate-900/50 rounded-xl border border-slate-800 space-y-2">
                             <div className="flex items-center gap-3">
-                                <div className="p-1.5 bg-mcp/10 rounded-lg text-mcp">
+                                <div className="p-1.5 bg-indigo-500/10 rounded-lg text-indigo-400">
                                     <Brain size={16} className="sm:w-[18px] sm:h-[18px]" />
                                 </div>
                                 <h4 className="font-bold text-white text-[13px] sm:text-sm">AI Explainer (MCP)</h4>
@@ -112,7 +117,7 @@ export const IntroOverlay = ({ onDismiss, onStartGuidedTour }) => {
                     {/* Highlighted Rule */}
                     <div className="bg-slate-800/50 rounded-lg p-2.5 border border-slate-700">
                         <p className="text-[10px] text-slate-300 font-medium">
-                            <span className="text-lingo font-bold uppercase tracking-tighter">Rule:</span> If Lingo detects a violation, the explanation is never shown.
+                            <span className="text-indigo-400 font-bold uppercase tracking-tighter">Rule:</span> If Lingo detects a violation, the explanation is never shown.
                         </p>
                     </div>
 

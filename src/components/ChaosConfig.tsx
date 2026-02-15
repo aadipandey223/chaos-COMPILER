@@ -1,21 +1,28 @@
 import React, { useState, useEffect } from 'react';
-import { Settings, Zap, Play, Plus, Trash2, Shield, Info, ToggleLeft, ToggleRight, FlaskConical, GripVertical, CheckCircle2, HelpCircle, RotateCcw, Save, Upload, Sparkles, ShieldCheck, ShieldAlert, ArrowRight } from 'lucide-react';
+import { Zap, Shield, Info, ToggleLeft, ToggleRight, FlaskConical, GripVertical, CheckCircle2, RotateCcw, Save, Upload, Sparkles, ShieldCheck, ShieldAlert, ArrowRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
-import glossaryData from '../lingo/glossary.json';
+import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 import { useI18n } from '../i18n/LanguageProvider';
+import { ChaosConfig as ChaosConfigType, RuleHits, CustomRule } from '../types';
 
-const DEFAULT_CONFIG = {
+interface ChaosConfigProps {
+    config: ChaosConfigType;
+    setConfig: (config: any) => void;
+    ruleHits?: RuleHits;
+}
+
+const DEFAULT_CONFIG: ChaosConfigType = {
     passes: {
         numberEncoding: true,
         substitution: true,
         opaquePredicates: true,
         flattening: true
     },
-    customRules: []
+    customRules: [],
+    seed: 42
 };
 
-const DEMO_PRESETS = {
+const DEMO_PRESETS: Record<string, { name: string, icon: any, color: string, config: Partial<ChaosConfigType> }> = {
     arithmeticChaos: {
         name: 'Arithmetic Chaos',
         icon: Zap,
@@ -66,10 +73,10 @@ const DEMO_PRESETS = {
     }
 };
 
-export const ChaosConfig = ({ config, setConfig, ruleHits = {} }) => {
+export const ChaosConfig: React.FC<ChaosConfigProps> = ({ config, setConfig, ruleHits = {} }) => {
     const { t } = useI18n();
     const [newRule, setNewRule] = useState({ source: 'ADD', target: 'XOR, AND, MUL' });
-    
+
     // Feature: Custom Rule Validation
     const [isRuleValid, setIsRuleValid] = useState(true);
 
@@ -85,7 +92,7 @@ export const ChaosConfig = ({ config, setConfig, ruleHits = {} }) => {
         setIsRuleValid(isValid);
     }, [newRule.target]);
 
-    const [savedPresets, setSavedPresets] = useState([]);
+    const [savedPresets, setSavedPresets] = useState<any[]>([]);
     const [presetName, setPresetName] = useState('');
     const [showSaveDialog, setShowSaveDialog] = useState(false);
 
@@ -115,11 +122,11 @@ export const ChaosConfig = ({ config, setConfig, ruleHits = {} }) => {
         setShowSaveDialog(false);
     };
 
-    const loadPreset = (preset) => {
+    const loadPreset = (preset: any) => {
         setConfig(JSON.parse(JSON.stringify(preset.config)));
     };
 
-    const deletePreset = (id) => {
+    const deletePreset = (id: number) => {
         const updated = savedPresets.filter(p => p.id !== id);
         setSavedPresets(updated);
         localStorage.setItem('chaosPresets', JSON.stringify(updated));
@@ -129,15 +136,15 @@ export const ChaosConfig = ({ config, setConfig, ruleHits = {} }) => {
         setConfig(JSON.parse(JSON.stringify(DEFAULT_CONFIG)));
     };
 
-    const applyDemoPreset = (presetKey) => {
+    const applyDemoPreset = (presetKey: string) => {
         const preset = DEMO_PRESETS[presetKey];
         if (preset) {
             setConfig(JSON.parse(JSON.stringify(preset.config)));
         }
     };
 
-    const togglePass = (pass) => {
-        setConfig(prev => ({
+    const togglePass = (pass: keyof typeof config.passes) => {
+        setConfig((prev: any) => ({
             ...prev,
             passes: {
                 ...prev.passes,
@@ -148,48 +155,48 @@ export const ChaosConfig = ({ config, setConfig, ruleHits = {} }) => {
 
     const addRule = () => {
         if (!newRule.source || !newRule.target || !isRuleValid) return;
-        setConfig(prev => ({
+        setConfig((prev: any) => ({
             ...prev,
             customRules: [...prev.customRules, { ...newRule, id: Date.now() }]
         }));
         setNewRule({ source: 'ADD', target: 'XOR, AND, MUL' });
     };
 
-    const removeRule = (id) => {
-        setConfig(prev => ({
+    const removeRule = (id: number) => {
+        setConfig((prev: any) => ({
             ...prev,
-            customRules: prev.customRules.filter(r => r.id !== id)
+            customRules: prev.customRules.filter((r: any) => r.id !== id)
         }));
     };
 
-    const onDragEnd = (result) => {
+    const onDragEnd = (result: DropResult) => {
         if (!result.destination) return;
 
         const items = Array.from(config.customRules);
         const [reorderedItem] = items.splice(result.source.index, 1);
         items.splice(result.destination.index, 0, reorderedItem);
 
-        setConfig(prev => ({
+        setConfig((prev: any) => ({
             ...prev,
             customRules: items
         }));
     };
 
-    const passIcons = {
+    const passIcons: Record<string, any> = {
         numberEncoding: Zap,
         substitution: FlaskConical,
         opaquePredicates: Shield,
         flattening: Play
     };
 
-    const passLabels = {
+    const passLabels: Record<string, string> = {
         numberEncoding: t('chaos.data_encoding', 'Data Encoding'),
         substitution: t('chaos.substitutions', 'Substitutions'),
         opaquePredicates: t('chaos.opaque_flow', 'Opaque Flow'),
         flattening: t('chaos.cf_flattening', 'CF Flattening')
     };
 
-    const mutationSteps = Object.keys(config.passes);
+    const mutationSteps = Object.keys(config.passes) as Array<keyof typeof config.passes>;
 
     return (
         <div className="space-y-8">
@@ -197,7 +204,7 @@ export const ChaosConfig = ({ config, setConfig, ruleHits = {} }) => {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                 {Object.entries(DEMO_PRESETS).map(([key, preset]) => {
                     const Icon = preset.icon;
-                    const colorClasses = {
+                    const colorClasses: Record<string, string> = {
                         amber: 'bg-amber-500/10 border-amber-500/30 hover:bg-amber-500/20 text-amber-400',
                         blue: 'bg-blue-500/10 border-blue-500/30 hover:bg-blue-500/20 text-blue-400',
                         violet: 'bg-violet-500/10 border-violet-500/30 hover:bg-violet-500/20 text-violet-400'
@@ -216,8 +223,8 @@ export const ChaosConfig = ({ config, setConfig, ruleHits = {} }) => {
                             <div className="text-left">
                                 <div className="text-sm font-bold">
                                     {key === 'arithmeticChaos' ? t('chaos.arithmetic', 'Arithmetic Chaos') :
-                                     key === 'controlFlowChaos' ? t('chaos.control_flow', 'Control Flow Chaos') :
-                                     t('chaos.heavy_obfuscation', 'Heavy Obfuscation')}
+                                        key === 'controlFlowChaos' ? t('chaos.control_flow', 'Control Flow Chaos') :
+                                            t('chaos.heavy_obfuscation', 'Heavy Obfuscation')}
                                 </div>
                                 <div className="text-[10px] opacity-60 uppercase tracking-wider">{t('chaos.quick_apply', 'Quick Apply')}</div>
                             </div>
@@ -428,7 +435,7 @@ export const ChaosConfig = ({ config, setConfig, ruleHits = {} }) => {
                                 {(newRule.target || 'TARGET').split(',').map((op, i) => (
                                     <div key={i} className="flex items-center gap-2">
                                         <ArrowRight size={10} className="text-slate-700" />
-                                        <span>{op.trim() || '...'} {i === (newRule.target.split(',').length - 1) ? 'result' : `tmp_${i}`}</span>
+                                        <span>{op.trim() || '...'} {i === ((newRule.target || '').split(',').length - 1) ? 'result' : `tmp_${i}`}</span>
                                     </div>
                                 ))}
                             </div>
@@ -440,13 +447,12 @@ export const ChaosConfig = ({ config, setConfig, ruleHits = {} }) => {
                         whileTap={isRuleValid ? { scale: 0.99 } : {}}
                         onClick={addRule}
                         disabled={!isRuleValid}
-                        className={`w-full py-4 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-2 ${
-                            isRuleValid 
-                            ? 'bg-violet-600 hover:bg-violet-500 text-white shadow-xl shadow-violet-900/20' 
+                        className={`w-full py-4 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-2 ${isRuleValid
+                            ? 'bg-violet-600 hover:bg-violet-500 text-white shadow-xl shadow-violet-900/20'
                             : 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700'
-                        }`}
+                            }`}
                     >
-                        {isRuleValid ? <Plus size={16} /> : <ShieldAlert size={16} />} 
+                        {isRuleValid ? <Zap size={16} /> : <ShieldAlert size={16} />}
                         {isRuleValid ? t('chaos.deploy_rule', 'Deploy Rule') : t('chaos.validation_failed', 'Validation Failed')}
                     </motion.button>
                 </div>

@@ -59,19 +59,19 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       .then(data => {
         setTranslations(data);
         const count = Object.keys(data).length;
-        
+
         if (count === 0) {
           setStatus('partial');
           console.info('[i18n] Project is empty. Push content using `npx lingo.dev push` to populate.');
         } else {
           setStatus('verified');
         }
-        
+
         console.log(`[i18n] Loaded ${count} translations for ${locale}`);
       })
       .catch(err => {
         console.error('[i18n] Critical translation loading error:', err);
-        
+
         // Determine error type for production-level error handling
         if (err.name === 'LingoAuthError') {
           console.error('[i18n] ❌ Authentication failed - verify VITE_LINGO_API_KEY is valid');
@@ -80,14 +80,15 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         } else if (err.name === 'LingoNetworkError') {
           console.error('[i18n] ❌ Network error - Lingo API unreachable');
         }
-        
+
         // Fall back to English on error
         setLocaleState('en');
         setTranslations({});
         setStatus('error');
-        
+
         // Alert user in production
-        alert(`Failed to load ${locale} translations. Falling back to English.\\n\\nError: ${err.message}`);
+        const details = err.details ? `\nDetails: ${JSON.stringify(err.details, null, 2)}` : '';
+        alert(`Failed to load ${locale} translations. Falling back to English.\n\nError: ${err.message}${details}`);
       });
   }, [locale, lingo]);
 
@@ -97,18 +98,18 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const t = (key: string, fallback?: string): string => {
     if (locale === 'en') return fallback || key;
-    
+
     // Return translation if available
     const translation = translations[key];
     if (translation) {
       return translation;
     }
-    
+
     // Graceful degradation on error - log only when missing
     if (status === 'error' || status === 'partial') {
       console.warn(`[i18n] Missing translation for '${key}' in ${locale}, using fallback`);
     }
-    
+
     return fallback || key;
   };
 

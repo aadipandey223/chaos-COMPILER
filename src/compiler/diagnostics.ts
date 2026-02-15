@@ -122,7 +122,7 @@ export function formatDiagnostic(diag: Diagnostic): string {
     error: '✗',
   }[diag.severity];
 
-  const paramsStr = diag.params 
+  const paramsStr = diag.params
     ? ` ${JSON.stringify(diag.params)}`
     : '';
 
@@ -146,7 +146,7 @@ export function emitNumberEncodingDiagnostic(
     DiagnosticIds.CHAOS_NUM_ENCODING,
     'chaos.transform.encoding',
     'info',
-    { original, encoding: encoded, offset },
+    { original: original, enc: encoded, offset },
     `Encoded constant ${original} as ${encoded} with offset ${offset}`
   );
 }
@@ -171,7 +171,7 @@ export function emitOpaquePredDiagnostic(
     DiagnosticIds.CHAOS_OPAQUE_PREDICATE,
     'chaos.transform.opaque',
     'info',
-    { variable, predicate: '(x*x + x) % 2 == 0' },
+    { variable: variable, cond: '(x*x + x) % 2 == 0' },
     `Injected opaque predicate using variable '${variable}'`
   );
 }
@@ -210,8 +210,8 @@ export function emitSemanticVerificationDiagnostic(
     passed ? DiagnosticIds.CHAOS_SEMANTIC_PRESERVED : DiagnosticIds.CHAOS_SEMANTIC_FAILED,
     'chaos.verification',
     passed ? 'info' : 'error',
-    { original, result: transformed, preserved: passed },
-    passed 
+    { original: original, result: transformed, preserved: passed },
+    passed
       ? `Semantic preservation verified: original=${original}, transformed=${transformed}`
       : `SEMANTIC MISMATCH: original=${original} ≠ transformed=${transformed}`
   );

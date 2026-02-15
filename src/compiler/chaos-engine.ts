@@ -8,6 +8,12 @@ import {
   CHAOS_LIMITS,
 } from '../types';
 import { cloneIR } from './ir-executor';
+import {
+  emitNumberEncodingDiagnostic,
+  emitSubstitutionDiagnostic,
+  emitOpaquePredDiagnostic,
+  emitFlatteningDiagnostic,
+} from './diagnostics';
 
 // ============================================================================
 // SEEDED RANDOM NUMBER GENERATOR (Lehmer LCG for determinism)
@@ -47,7 +53,7 @@ function checkBudget(
   cost: number
 ): boolean {
   const limitKey = type === 'instructionsAdded' ? 'maxNewInstructions' :
-                   type === 'controlDepth' ? 'maxControlDepth' : 'maxEncodingOps';
+    type === 'controlDepth' ? 'maxControlDepth' : 'maxEncodingOps';
   return budget[type] + cost <= CHAOS_LIMITS[limitKey];
 }
 
@@ -98,9 +104,9 @@ function applyNumberEncoding(
       instr.body = applyNumberEncoding(instr.body, budget, probability);
     }
 
-    // Only encode ASSIGN with numeric values
+    // Encode numeric values in assignments, prints, and returns
     if (
-      instr.op === 'ASSIGN' &&
+      (instr.op === 'ASSIGN' || instr.op === 'PRINT' || instr.op === 'RETURN') &&
       typeof instr.value === 'number' &&
       seededRandom() < probability
     ) {
@@ -110,12 +116,12 @@ function applyNumberEncoding(
       }
 
       const offset = randomInt(1, 15);
-      const temp = genTemp('enc_add');
-      // Compute encoded value: add offset, then subtract to recover
+      const tempAdd = genTemp('enc_add');
+      const tempVal = (instr.op === 'ASSIGN' && instr.target) ? instr.target : genTemp('enc_recover');
 
       result.push({
         op: 'ADD',
-        target: temp,
+        target: tempAdd,
         left: instr.value,
         right: offset,
         meta: 'CHAOS_NUMBER_ENCODING',
@@ -123,14 +129,26 @@ function applyNumberEncoding(
 
       result.push({
         op: 'SUB',
-        target: instr.target!,
-        left: temp,
+        target: tempVal,
+        left: tempAdd,
         right: offset,
         meta: 'CHAOS_NUMBER_ENCODING',
       });
 
+      // For PRINT and RETURN, we still need to emit the original op using the recovered value
+      if (instr.op !== 'ASSIGN') {
+        result.push({
+          op: instr.op,
+          value: tempVal,
+          meta: 'CHAOS_NUMBER_ENCODING',
+        });
+      }
+
       consumeBudget(budget, 'encodingOps', 1);
       consumeBudget(budget, 'instructionsAdded', 2);
+
+      // Emit diagnostic
+      emitNumberEncodingDiagnostic(instr.value, `${instr.value} + ${offset} - ${offset}`, offset);
     } else {
       result.push(instr);
     }
@@ -212,6 +230,9 @@ function applyInstructionSubstitution(
       });
 
       consumeBudget(budget, 'instructionsAdded', 4);
+
+      // Emit diagnostic
+      emitSubstitutionDiagnostic('ADD', ['XOR', 'AND', 'MUL', 'ADD']);
     } else {
       result.push(instr);
     }
@@ -259,7 +280,7 @@ function applyOpaquePredicates(
 
       // Select a random variable for the opaque predicate
       const varName = variables[randomInt(0, variables.length - 1)];
-      
+
       // Build opaque predicate: (x*x + x) % 2 == 0
       const mulTemp = genTemp('op_mul');
       const addTemp = genTemp('op_add');
@@ -286,6 +307,9 @@ function applyOpaquePredicates(
 
       consumeBudget(budget, 'controlDepth', 1);
       consumeBudget(budget, 'instructionsAdded', 5);
+
+      // Emit diagnostic
+      emitOpaquePredDiagnostic(varName);
     } else {
       result.push(instr);
     }
@@ -325,7 +349,7 @@ function applyControlFlowFlattening(
   budget: ChaosBudget,
   probability: number
 ): IRInstruction[] {
-  // Only apply to top-level if we have enough instructions and probability hits
+  // Only apply if we have enough instructions and probability hits
   if (ir.length < 3 || seededRandom() > probability) {
     return ir;
   }
@@ -334,20 +358,21 @@ function applyControlFlowFlattening(
     return ir;
   }
 
-  // Find instructions that can be flattened (non-control-flow)
+  // Find the first contiguous block of flattenable instructions
   const flattenableInstrs: IRInstruction[] = [];
-  const otherInstrs: IRInstruction[] = [];
+  const remainingInstrs: IRInstruction[] = [];
+  let foundControlFlow = false;
 
   for (const instr of ir) {
-    if (
+    if (!foundControlFlow &&
       instr.op !== 'IF' &&
       instr.op !== 'WHILE' &&
       instr.op !== 'RETURN' &&
-      instr.op !== 'SWITCH'
-    ) {
+      instr.op !== 'SWITCH') {
       flattenableInstrs.push(instr);
     } else {
-      otherInstrs.push(instr);
+      foundControlFlow = true;
+      remainingInstrs.push(instr);
     }
   }
 
@@ -384,14 +409,12 @@ function applyControlFlowFlattening(
 
   // Create the dispatcher loop
   const loopTestTemp = genTemp('flat_test');
-  
+
   result.push({
     op: 'WHILE',
-    // Test instructions executed each iteration - check if state >= 0
     consequent: [
       { op: 'GREATER_EQUAL' as const, target: loopTestTemp, left: stateVar, right: 0, meta: 'CHAOS_FLATTENING' },
     ],
-    // Test result is read from the temp variable
     test: { op: 'LOAD' as const, value: loopTestTemp },
     body: [
       {
@@ -404,11 +427,14 @@ function applyControlFlowFlattening(
     meta: 'CHAOS_FLATTENING',
   });
 
-  // Add remaining instructions (control flow) after the flattened block
-  result.push(...otherInstrs);
+  // Add remaining instructions (preserving their order relative to the flattened block)
+  result.push(...remainingInstrs);
 
   consumeBudget(budget, 'controlDepth', 1);
   consumeBudget(budget, 'instructionsAdded', 5);
+
+  // Emit diagnostic
+  emitFlatteningDiagnostic(flattenableInstrs.length);
 
   return result;
 }
@@ -444,7 +470,7 @@ function applyCustomRules(
     for (const rule of customRules) {
       if (instr.op === rule.source.toUpperCase() && !matched) {
         const targetOps = rule.target.split(',').map(s => s.trim().toUpperCase());
-        
+
         if (!checkBudget(budget, 'instructionsAdded', targetOps.length)) {
           continue;
         }
@@ -455,7 +481,7 @@ function applyCustomRules(
 
         // Generate expanded instructions
         let lastResult = instr.left;
-        
+
         for (let i = 0; i < targetOps.length; i++) {
           const op = targetOps[i] as IRInstruction['op'];
           const isLast = i === targetOps.length - 1;
@@ -691,6 +717,26 @@ export const CHAOS_PRESETS = {
     // Built-in passes handle all transformations with correct semantics
     customRules: [],
     seed: 99999,
+  },
+  stealthMode: {
+    passes: {
+      numberEncoding: true,
+      substitution: false,
+      opaquePredicates: true,
+      flattening: false,
+    },
+    customRules: [],
+    seed: 77777,
+  },
+  maximumChaos: {
+    passes: {
+      numberEncoding: true,
+      substitution: true,
+      opaquePredicates: true,
+      flattening: true,
+    },
+    customRules: [],
+    seed: 13579,
   },
 } as const;
 

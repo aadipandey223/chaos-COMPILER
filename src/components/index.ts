@@ -1,7 +1,9 @@
-export { App } from './App';
-export { EditorPanel } from './EditorPanel';
-export { TransformationTimeline } from './TransformationTimeline';
-export { LingoPanel } from './LingoPanel';
-export { ChaosOrchestrator } from './ChaosOrchestrator';
-export { SemanticVerifier } from './SemanticVerifier';
-export { ExampleLibrary } from './ExampleLibrary';
+export { App } from './App.tsx';
+export { EditorPanel } from './EditorPanel.tsx';
+export { TransformationTimeline } from './TransformationTimeline.tsx';
+export { LingoPanel } from './LingoPanel.tsx';
+export { LingoCliPanel } from './LingoCliPanel.tsx';
+export { ChaosOrchestrator } from './ChaosOrchestrator.tsx';
+export { SemanticVerifier } from './SemanticVerifier.tsx';
+export { ExampleLibrary } from './ExampleLibrary.tsx';
+export { StudentExplanation } from './StudentExplanation.tsx';

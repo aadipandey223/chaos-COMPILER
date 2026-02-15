@@ -1,14 +1,21 @@
+import React from 'react';
 import { AlertCircle, Info, Bug, Shield } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { MCP } from '../compiler/mcp';
+import { MCP } from '../mcp';
 import { useI18n } from '../i18n/LanguageProvider';
+import { Diagnostic, Mode } from '../types';
 
-export const DiagnosticsViewer = ({ diagnostics, mode = 'student' }) => {
+interface DiagnosticsViewerProps {
+    diagnostics: Diagnostic[];
+    mode?: Mode;
+}
+
+export const DiagnosticsViewer: React.FC<DiagnosticsViewerProps> = ({ diagnostics, mode = 'student' }) => {
     const { t } = useI18n();
 
     if (!diagnostics || diagnostics.length === 0) return null;
 
-    const getIcon = (severity) => {
+    const getIcon = (severity: string) => {
         switch (severity) {
             case 'error': return <AlertCircle className="text-red-500" size={16} />;
             case 'warning': return <AlertCircle className="text-yellow-500" size={16} />;
@@ -18,7 +25,7 @@ export const DiagnosticsViewer = ({ diagnostics, mode = 'student' }) => {
         }
     };
 
-    const getSeverityStyle = (severity) => {
+    const getSeverityStyle = (severity: string) => {
         switch (severity) {
             case 'error': return 'border-red-100 bg-red-50/50';
             case 'warning': return 'border-yellow-100 bg-yellow-50/50';
@@ -51,20 +58,20 @@ export const DiagnosticsViewer = ({ diagnostics, mode = 'student' }) => {
                         </div>
                         <p className="text-xs text-slate-700 font-semibold mb-1">
                             {d.id === 'CHAOS_SUBST_ADD' && `Replaced ADD with XOR/AND/MUL chain`}
-                            {d.id === 'CHAOS_OPAQUE_PRED' && `Injected opaque predicate (${d.params?.cond || 'N/A'})`}
+                            {d.id === 'CHAOS_OPAQUE_PRED' && `Injected opaque predicate (${(d.params as any)?.cond || 'N/A'})`}
                             {d.id === 'CHAOS_CF_FLATTEN' && `Flattened control flow (Switch-Loop)`}
-                            {d.id === 'CHAOS_ALGEBRAIC_SWAP' && `Swapped operands for ${d.params?.op || 'operation'}`}
-                            {d.id === 'COMPILE_CLEAN' && `Clean compilation (${d.params?.irCount || 0} IR instructions)`}
+                            {d.id === 'CHAOS_ALGEBRAIC_SWAP' && `Swapped operands for ${(d.params as any)?.op || 'operation'}`}
+                            {d.id === 'COMPILE_CLEAN' && `Clean compilation (${(d.params as any)?.irCount || 0} IR instructions)`}
                         </p>
                         <p className={`text-[11px] leading-relaxed p-2 rounded border ${mode === 'researcher' ? 'bg-indigo-50/50 border-indigo-100 text-indigo-900 italic' : 'bg-white/50 border-slate-100 text-slate-600'}`}>
-                            {MCP.getExplanation(d.id, mode, d.params || {}, t)}
+                            {MCP.getExplanation(d.id, mode, (d.params as any) || {}, t)}
                         </p>
                         {d.params && Object.keys(d.params).length > 0 && (
 
                             <div className="mt-1 flex flex-wrap gap-2">
                                 {Object.entries(d.params).map(([k, v]) => (
                                     <span key={k} className="text-[9px] bg-white/50 px-1.5 py-0.5 rounded border border-black/5 text-slate-500">
-                                        <span className="font-bold">{k}:</span> {v}
+                                        <span className="font-bold">{k}:</span> {v as any}
                                     </span>
                                 ))}
                             </div>

@@ -16,6 +16,15 @@ export default defineConfig({
     }),
     react(),
   ],
+  server: {
+    proxy: {
+      '/api-lingo': {
+        target: 'https://api.lingo.dev',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api-lingo/, ''),
+      },
+    },
+  },
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),

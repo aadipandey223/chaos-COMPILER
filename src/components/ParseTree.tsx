@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     GitBranch,
@@ -11,14 +11,24 @@ import {
     ChevronUp,
     Layers,
     FunctionSquare,
-    Download
+    Download,
+    LucideIcon
 } from 'lucide-react';
 import html2canvas from 'html2canvas';
+import { ASTNode, Program, FunctionDeclaration, VariableDeclaration, BinaryExpression, Literal, Identifier, ReturnStatement } from '../types';
 
 // --- Node Style Configuration ---
-const getNodeStyle = (label) => {
+interface NodeStyle {
+    bg: string;
+    border: string;
+    text: string;
+    icon: LucideIcon;
+    desc: string;
+}
+
+const getNodeStyle = (label: string): NodeStyle => {
     // Light "Cream" Eye-Soothing Palette
-    const base = { bg: "bg-[#fdfbf7]", border: "border-[#e0d6c5]", text: "text-[#5d4a3b]", icon: Box, desc: "A generic AST node" };
+    const base: NodeStyle = { bg: "bg-[#fdfbf7]", border: "border-[#e0d6c5]", text: "text-[#5d4a3b]", icon: Box, desc: "A generic AST node" };
 
     if (label.includes('Program'))
         return { bg: "bg-[#f2f4ff]", border: "border-[#c5cae9]", text: "text-[#3f51b5]", icon: Layers, desc: "The entry point of the source program" };
@@ -42,7 +52,16 @@ const getNodeStyle = (label) => {
 };
 
 // --- Tree Node Component ---
-const TreeNode = ({ label, children, isRoot = false, isFirst = false, isLast = false, isOnlyChild = false }) => {
+interface TreeNodeProps {
+    label: string;
+    children?: TreeNodeProps[];
+    isRoot?: boolean;
+    isFirst?: boolean;
+    isLast?: boolean;
+    isOnlyChild?: boolean;
+}
+
+const TreeNode: React.FC<TreeNodeProps> = ({ label, children, isRoot = false, isFirst = false, isLast = false, isOnlyChild = false }) => {
     const [isOpen, setIsOpen] = useState(true);
     const hasChildren = children && children.length > 0;
     const { bg, border, text, icon: Icon, desc } = getNodeStyle(label || '');
@@ -128,22 +147,22 @@ const TreeNode = ({ label, children, isRoot = false, isFirst = false, isLast = f
 };
 
 // --- AST Processor ---
-export const astToTreeData = (node) => {
+export const astToTreeData = (node: ASTNode | null): TreeNodeProps | null => {
     if (!node) return null;
-    if (node.type === 'Program') return { label: 'Program', children: node.body.map(astToTreeData).filter(Boolean) };
-    if (node.type === 'FunctionDeclaration') return { label: `Function:${node.name}`, children: node.body.map(astToTreeData).filter(Boolean) };
-    if (node.type === 'VariableDeclaration') return { label: `VarDecl:${node.kind}`, children: node.declarations.map(d => ({ label: `Assign:${d.id}`, children: [astToTreeData(d.init)].filter(Boolean) })) };
-    if (node.type === 'BinaryExpression') return { label: `Binary:${node.operator}`, children: [astToTreeData(node.left), astToTreeData(node.right)].filter(Boolean) };
-    if (node.type === 'Literal') return { label: `Literal:${node.value}` };
-    if (node.type === 'Identifier') return { label: `ID:${node.name}` };
-    if (node.type === 'ReturnStatement') return { label: 'Return', children: [astToTreeData(node.argument)].filter(Boolean) };
+    if (node.type === 'Program') return { label: 'Program', children: (node as Program).body.map(astToTreeData).filter((n): n is TreeNodeProps => n !== null) };
+    if (node.type === 'FunctionDeclaration') return { label: `Function:${(node as FunctionDeclaration).name}`, children: (node as FunctionDeclaration).body.map(astToTreeData).filter((n): n is TreeNodeProps => n !== null) };
+    if (node.type === 'VariableDeclaration') return { label: `VarDecl:${(node as VariableDeclaration).kind}`, children: (node as VariableDeclaration).declarations.map(d => ({ label: `Assign:${d.id}`, children: [astToTreeData(d.init)].filter((n): n is TreeNodeProps => n !== null) })) };
+    if (node.type === 'BinaryExpression') return { label: `Binary:${(node as BinaryExpression).operator}`, children: [astToTreeData((node as BinaryExpression).left), astToTreeData((node as BinaryExpression).right)].filter((n): n is TreeNodeProps => n !== null) };
+    if (node.type === 'Literal') return { label: `Literal:${(node as Literal).value}` };
+    if (node.type === 'Identifier') return { label: `ID:${(node as Identifier).name}` };
+    if (node.type === 'ReturnStatement') return { label: 'Return', children: [astToTreeData((node as ReturnStatement).argument)].filter((n): n is TreeNodeProps => n !== null) };
     return { label: `Node:${node.type}` };
 };
 
 // --- Main Component ---
-export const ParseTreeCard = ({ ast }) => {
+export const ParseTreeCard: React.FC<{ ast: Program }> = ({ ast }) => {
     const treeData = astToTreeData(ast);
-    const treeRef = React.useRef(null);
+    const treeRef = useRef<HTMLDivElement>(null);
 
     const handleDownload = async () => {
         if (!treeRef.current) return;

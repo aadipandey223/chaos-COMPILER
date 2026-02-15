@@ -56,8 +56,8 @@ const TRANSFORMATION_EXPLANATIONS: Record<string, (params: Record<string, unknow
   semanticPreservation: (params) => `
     Semantic preservation verified. The original IR produced output ${params.original ?? 'X'} 
     and the transformed IR produced output ${params.result ?? 'X'}. 
-    ${params.preserved ? 'Values match - transformation is semantically correct.' : 
-    'MISMATCH DETECTED - transformation may have introduced a bug.'}
+    ${params.preserved ? 'Values match - transformation is semantically correct.' :
+      'MISMATCH DETECTED - transformation may have introduced a bug.'}
   `.trim().replace(/\s+/g, ' '),
 };
 
@@ -114,7 +114,7 @@ function generateMockExplanation(
   params: Record<string, unknown>
 ): string {
   const generator = TRANSFORMATION_EXPLANATIONS[transformationType];
-  
+
   if (generator) {
     return generator(params);
   }
@@ -233,3 +233,41 @@ export function getDisplayName(
   }
   return transformationType;
 }
+
+// ============================================================================
+// MCP EXTERNAL API
+// ============================================================================
+
+export const MCP = {
+  /**
+   * Synchronous gate for UI explanations
+   */
+  getExplanation: (
+    id: string,
+    mode: string = 'student',
+    params: Record<string, any> = {},
+    t?: (key: string, fallback: string) => string
+  ): string => {
+    // Map diagnostic IDs to TRANSFORMATION_EXPLANATIONS keys
+    const mapping: Record<string, string> = {
+      'chaosnumencoding': 'numberEncoding',
+      'chaossubstitution': 'substitution',
+      'chaosopaquepredicate': 'opaquePredicates',
+      'chaosflattening': 'flattening',
+      'chaoscustomrule': 'customRule',
+      'chaossemanticpreserved': 'semanticPreservation',
+      'chaossemanticfailed': 'semanticPreservation',
+    };
+
+    const normalizedId = id.toLowerCase().replace(/_/g, '');
+    const transformationType = mapping[normalizedId] || normalizedId.replace(/^chaos/, '');
+
+    const baseExplanation = generateMockExplanation(transformationType, params);
+
+    // Safety check for mode
+    const targetMode = (mode === 'researcher' ? 'researcher' : 'student') as ExplanationMode;
+    const adapted = adaptExplanation(baseExplanation, targetMode);
+
+    return t ? t(adapted, adapted) : adapted;
+  }
+};

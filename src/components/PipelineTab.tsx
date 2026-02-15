@@ -3,9 +3,9 @@ import { Cpu, Cog, Atom, ArrowRight, Sparkles, Shield, Brain, GitBranch, AlertTr
 import { motion } from 'framer-motion';
 import { useI18n } from '../i18n/LanguageProvider';
 
-export const PipelineTab = () => {
+export const PipelineTab: React.FC = () => {
     const { t } = useI18n();
-    
+
     const components = [
         {
             id: 'parser',
@@ -56,16 +56,16 @@ export const PipelineTab = () => {
             role: t('pipeline.mcp_role', 'Educational Insights')
         },
     ];
-    
+
     const mainPipeline = ['parser', 'ir', 'chaos', 'lingo', 'codegen'];
 
     return (
         <div className="max-w-6xl mx-auto p-4 sm:p-6 space-y-6 sm:space-y-10">
             {/* Header */}
             <div className="text-center mb-8 sm:mb-12">
-                <div className="inline-flex items-center gap-2 px-3 sm:px-4 py-1.5 sm:py-2 bg-mcp/10 rounded-full border border-mcp/30 mb-3 sm:mb-4">
-                    <Sparkles size={14} className="text-mcp sm:w-[16px] sm:h-[16px]" />
-                    <span className="text-[10px] sm:text-xs font-bold text-mcp uppercase tracking-widest">{t('pipeline.system_architecture', 'System Architecture')}</span>
+                <div className="inline-flex items-center gap-2 px-3 sm:px-4 py-1.5 sm:py-2 bg-indigo-500/10 rounded-full border border-indigo-500/30 mb-3 sm:mb-4">
+                    <Sparkles size={14} className="text-indigo-400 sm:w-[16px] sm:h-[16px]" />
+                    <span className="text-[10px] sm:text-xs font-bold text-indigo-400 uppercase tracking-widest">{t('pipeline.system_architecture', 'System Architecture')}</span>
                 </div>
                 <div className="flex items-center justify-center gap-2 sm:gap-3 mb-2 sm:mb-3">
                     <h2 className="text-2xl sm:text-4xl font-bold text-white tracking-tight">{t('pipeline.components', 'Pipeline Components')}</h2>
@@ -73,8 +73,8 @@ export const PipelineTab = () => {
                         <HelpCircle size={16} className="text-slate-500 cursor-help hover:text-slate-300 transition-colors sm:w-[18px] sm:h-[18px]" />
                         <div className="absolute top-1/2 left-full ml-3 sm:ml-4 -translate-y-1/2 w-48 sm:w-64 p-3 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl text-[10px] sm:text-xs text-slate-300 opacity-0 group-hover:opacity-100 transition-all pointer-events-none z-50">
                             <div className="absolute top-1/2 -left-1 -translate-y-1/2 w-2 h-2 bg-slate-900 border-b border-l border-slate-700 rotate-45" />
-                                <p className="font-bold text-white mb-1">{t('pipeline.validation_tooltip', 'Why validation matters:')}</p>
-                                {t('pipeline.validation_desc', 'AI explains what might be true. Lingo enforces what is allowed to be shown.')}
+                            <p className="font-bold text-white mb-1">{t('pipeline.validation_tooltip', 'Why validation matters:')}</p>
+                            {t('pipeline.validation_desc', 'AI explains what might be true. Lingo enforces what is allowed to be shown.')}
                         </div>
                     </div>
                 </div>
@@ -125,7 +125,7 @@ export const PipelineTab = () => {
                 {/* Generative Section */}
                 <div>
                     <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4 flex items-center gap-2">
-                        <AlertTriangle size={14} className="text-mcp" />
+                        <AlertTriangle size={14} className="text-indigo-400" />
                         {t('pipeline.generative_layer', 'Generative / Untrusted Layer')}
                     </h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -134,18 +134,18 @@ export const PipelineTab = () => {
                                 key={comp.id}
                                 initial={{ opacity: 0, scale: 0.95 }}
                                 animate={{ opacity: 1, scale: 1 }}
-                                className="glass-panel p-5 border-l-4 border-l-mcp hover:bg-white/[0.02] transition-colors group"
+                                className="glass-panel p-5 border-l-4 border-l-indigo-500 hover:bg-white/[0.02] transition-colors group"
                             >
                                 <div className="flex items-start gap-4">
-                                    <div className="p-3 bg-mcp/10 text-mcp rounded-lg">
+                                    <div className="p-3 bg-indigo-500/10 text-indigo-400 rounded-lg">
                                         <comp.icon size={22} />
                                     </div>
                                     <div className="flex-1">
                                         <div className="flex items-center justify-between mb-1">
-                                            <h4 className="font-bold text-white group-hover:text-mcp transition-colors">{comp.name}</h4>
-                                            <span className="text-[9px] bg-mcp/10 text-mcp border border-mcp/30 px-1.5 py-0.5 rounded font-bold uppercase">{t('pipeline.untrusted_badge', 'Untrusted')}</span>
+                                            <h4 className="font-bold text-white group-hover:text-indigo-400 transition-colors">{comp.name}</h4>
+                                            <span className="text-[9px] bg-indigo-500/10 text-indigo-400 border border-indigo-500/30 px-1.5 py-0.5 rounded font-bold uppercase">{t('pipeline.untrusted_badge', 'Untrusted')}</span>
                                         </div>
-                                        <p className="text-[10px] text-mcp uppercase font-bold mb-2">{comp.role}</p>
+                                        <p className="text-[10px] text-indigo-400 uppercase font-bold mb-2">{comp.role}</p>
                                         <p className="text-xs text-slate-400 leading-normal">{comp.desc}</p>
                                     </div>
                                 </div>
@@ -158,15 +158,15 @@ export const PipelineTab = () => {
             {/* Pipeline Visualization */}
             <div className="glass-panel p-4 sm:p-8 bg-slate-900/50 relative overflow-hidden">
                 {/* Background Glows */}
-                <div className="absolute top-0 right-0 w-64 h-64 bg-lingo/5 rounded-full blur-[100px] -mr-32 -mt-32" />
-                <div className="absolute bottom-0 left-0 w-64 h-64 bg-mcp/5 rounded-full blur-[100px] -ml-32 -mb-32" />
+                <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/5 rounded-full blur-[100px] -mr-32 -mt-32" />
+                <div className="absolute bottom-0 left-0 w-64 h-64 bg-indigo-500/5 rounded-full blur-[100px] -ml-32 -mb-32" />
 
                 <div className="relative z-10">
                     <div className="flex flex-col sm:flex-row items-center justify-between mb-8 gap-4">
                         <h3 className="text-[10px] sm:text-xs font-black text-slate-300 uppercase tracking-[0.2em]">{t('pipeline.enforcement_flow', 'Enforcement Flow')}</h3>
                         <div className="flex items-center gap-4 text-[9px] sm:text-[10px] font-bold uppercase tracking-tighter bg-slate-800/50 px-3 py-1.5 rounded-full border border-slate-700/50">
                             <div className="flex items-center gap-1.5"><div className="w-2 h-2 bg-slate-700 rounded-full" /> {t('pipeline.legend_logic', 'Logic')}</div>
-                            <div className="flex items-center gap-1.5"><div className="w-2 h-2 bg-mcp rounded-full shadow-[0_0_8px_rgba(168,85,247,0.4)]" /> {t('pipeline.legend_explanation', 'Explanation')}</div>
+                            <div className="flex items-center gap-1.5"><div className="w-2 h-2 bg-indigo-500 rounded-full shadow-[0_0_8px_rgba(99,102,241,0.4)]" /> {t('pipeline.legend_explanation', 'Explanation')}</div>
                             <div className="flex items-center gap-1.5"><div className="w-2 h-2 bg-emerald-500 rounded-full shadow-[0_0_8px_rgba(16,185,129,0.4)]" /> {t('pipeline.legend_validation', 'Validation Gate')}</div>
                         </div>
                     </div>
@@ -213,20 +213,20 @@ export const PipelineTab = () => {
                         {/* Side Channel - Horizontal Flow */}
                         <div className="flex flex-col items-center w-full">
                             <div className="flex flex-col items-center">
-                                <div className="h-10 w-px bg-gradient-to-b from-slate-800 to-mcp/40" />
-                                <div className="w-1.5 h-1.5 border-b border-r border-mcp/40 rotate-45 mt-[-4px]" />
-                                <span className="text-[9px] text-mcp uppercase font-black mb-8 tracking-[0.3em] mt-3">{t('pipeline.validation_sidechannel', 'Validation Side-Channel')}</span>
+                                <div className="h-10 w-px bg-gradient-to-b from-slate-800 to-indigo-500/40" />
+                                <div className="w-1.5 h-1.5 border-b border-r border-indigo-500/40 rotate-45 mt-[-4px]" />
+                                <span className="text-[9px] text-indigo-400 uppercase font-black mb-8 tracking-[0.3em] mt-3">{t('pipeline.validation_sidechannel', 'Validation Side-Channel')}</span>
                             </div>
 
                             <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6 w-full justify-center">
                                 {/* MCP Card */}
-                                <div className="w-full sm:w-auto flex items-center gap-4 px-6 py-4 rounded-xl border bg-mcp/5 border-mcp/30 shadow-[0_0_30px_rgba(168,85,247,0.1)]">
-                                    <div className="p-2.5 bg-mcp/10 rounded-lg text-mcp">
+                                <div className="w-full sm:w-auto flex items-center gap-4 px-6 py-4 rounded-xl border bg-indigo-500/5 border-indigo-500/30 shadow-[0_0_30px_rgba(99,102,241,0.1)]">
+                                    <div className="p-2.5 bg-indigo-500/10 rounded-lg text-indigo-400">
                                         <Brain size={20} />
                                     </div>
                                     <div className="flex flex-col">
                                         <span className="text-sm font-bold text-white tracking-tight">MCP Explainer</span>
-                                        <span className="text-[9px] text-mcp/70 uppercase font-bold tracking-widest mt-1">generative</span>
+                                        <span className="text-[9px] text-indigo-500/70 uppercase font-bold tracking-widest mt-1">generative</span>
                                     </div>
                                 </div>
 

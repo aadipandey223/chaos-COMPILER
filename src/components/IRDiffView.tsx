@@ -2,13 +2,24 @@ import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Layers, Info } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MCP } from '../compiler/mcp';
+import { MCP } from '../mcp';
 import { useI18n } from '../i18n/LanguageProvider';
+import { IRSnapshot, Mode } from '../types';
 
-export const IRDiffView = ({ snapshots = [] }) => {
+interface IRDiffViewProps {
+    snapshots?: IRSnapshot[];
+}
+
+export const IRDiffView: React.FC<IRDiffViewProps> = ({ snapshots = [] }) => {
     const { t } = useI18n();
     const [step, setStep] = useState(0);
-    const [tooltipState, setTooltipState] = useState({
+    const [tooltipState, setTooltipState] = useState<{
+        visible: boolean;
+        x: number;
+        y: number;
+        content: string | null;
+        meta: string | null;
+    }>({
         visible: false,
         x: 0,
         y: 0,
@@ -17,16 +28,16 @@ export const IRDiffView = ({ snapshots = [] }) => {
     });
 
     const currentSnapshot = snapshots[step] || { name: 'Empty', ir: [] };
-    const prevSnapshot = (step > 0 ? snapshots[step - 1] : snapshots[0]) || { name: 'Empty', ir: [] };
+    // const prevSnapshot = (step > 0 ? snapshots[step - 1] : snapshots[0]) || { name: 'Empty', ir: [] };
 
-    const getExplanationForMeta = (meta) => {
+    const getExplanationForMeta = (meta: string) => {
         const exactMatch = MCP.getExplanation(meta, 'student', {}, t);
         if (exactMatch && !exactMatch.startsWith("Transformation '")) return exactMatch;
-        const map = { 'CHAOS_OPAQUE_PREDICATE': 'CHAOS_OPAQUE_PRED', 'CHAOS_CF_FLATTENING_LITE': 'CHAOS_CF_FLATTEN' };
+        const map: Record<string, string> = { 'CHAOS_OPAQUE_PREDICATE': 'CHAOS_OPAQUE_PRED', 'CHAOS_CF_FLATTENING_LITE': 'CHAOS_CF_FLATTEN' };
         return MCP.getExplanation(map[meta] || meta, 'student', {}, t);
     };
 
-    const handleMouseEnter = (e, meta) => {
+    const handleMouseEnter = (e: React.MouseEvent, meta: string) => {
         if (!meta) return;
         const rect = e.currentTarget.getBoundingClientRect();
         let x = rect.right + 10;
@@ -36,7 +47,8 @@ export const IRDiffView = ({ snapshots = [] }) => {
 
     const handleMouseLeave = () => setTooltipState(prev => ({ ...prev, visible: false }));
 
-    const renderInstruction = (instr, idx, isNew) => {
+    /*
+    const renderInstruction = (instr: any, idx: number, isNew: boolean) => {
         const isChanged = isNew && instr.meta;
         return (
             <div
@@ -58,6 +70,7 @@ export const IRDiffView = ({ snapshots = [] }) => {
             </div>
         );
     };
+    */
 
     return (
         <>
@@ -116,7 +129,7 @@ export const IRDiffView = ({ snapshots = [] }) => {
                         <div className="flex-1 overflow-y-auto custom-scrollbar bg-slate-900/40 rounded-xl border border-slate-800/50 p-4 shadow-inner">
                             <div className="space-y-1">
                                 {currentSnapshot.ir.map((instr, idx) => {
-                                    const isChanged = instr.meta && step > 0;
+                                    const isChanged = !!(instr.meta && step > 0);
                                     return (
                                         <div
                                             key={idx}
@@ -127,7 +140,7 @@ export const IRDiffView = ({ snapshots = [] }) => {
                                                     : 'bg-transparent border-transparent hover:bg-slate-800/30'
                                                 }
                                         `}
-                                            onMouseEnter={(e) => isChanged && handleMouseEnter(e, instr.meta)}
+                                            onMouseEnter={(e) => isChanged && instr.meta && handleMouseEnter(e, instr.meta)}
                                             onMouseLeave={handleMouseLeave}
                                         >
                                             <span className="text-xs text-slate-600 font-mono w-6 text-right select-none opacity-50 group-hover:opacity-100">{idx}</span>
@@ -180,10 +193,10 @@ export const IRDiffView = ({ snapshots = [] }) => {
                                 position: 'fixed',
                                 zIndex: 9999
                             }}
-                            className="bg-slate-900/95 backdrop-blur-xl border border-mcp/50 rounded-xl p-4 shadow-[0_10px_40px_-10px_rgba(0,0,0,0.5)] w-80 pointer-events-none"
+                            className="bg-slate-900/95 backdrop-blur-xl border border-indigo-500/50 rounded-xl p-4 shadow-[0_10px_40px_-10px_rgba(0,0,0,0.5)] w-80 pointer-events-none"
                         >
                             <div className="flex items-center justify-between mb-2">
-                                <div className="flex items-center gap-2 text-mcp">
+                                <div className="flex items-center gap-2 text-indigo-400">
                                     <Info size={14} />
                                     <span className="text-xs font-bold uppercase tracking-wider">{t('ui.strategy_insight', 'Strategy Insight')}</span>
                                 </div>
@@ -192,7 +205,7 @@ export const IRDiffView = ({ snapshots = [] }) => {
                             <p className="text-sm text-slate-200 leading-relaxed font-medium">
                                 {tooltipState.content}
                             </p>
-                            <div className="absolute inset-0 bg-mcp/5 rounded-xl pointer-events-none" />
+                            <div className="absolute inset-0 bg-indigo-500/5 rounded-xl pointer-events-none" />
                         </motion.div>
                     )}
                 </AnimatePresence>,

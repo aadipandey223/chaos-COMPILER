@@ -20,6 +20,8 @@ const PRESET_CONFIG: { key: ChaosPreset; label: string; icon: typeof Zap; color:
   { key: 'arithmeticChaos', label: 'Arithmetic Chaos', icon: Binary, color: 'amber' },
   { key: 'controlFlowChaos', label: 'Control Flow', icon: Shuffle, color: 'blue' },
   { key: 'heavyObfuscation', label: 'Heavy Obfuscation', icon: Shield, color: 'purple' },
+  { key: 'stealthMode', label: 'Stealth Mode', icon: Zap, color: 'emerald' },
+  { key: 'maximumChaos', label: 'Maximum Chaos', icon: Sparkles, color: 'red' },
 ];
 
 export function ChaosOrchestrator() {
@@ -109,7 +111,7 @@ export function ChaosOrchestrator() {
           <Sparkles className="w-4 h-4" />
           Quick Apply Presets
         </h3>
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-5 gap-3">
           {PRESET_CONFIG.map(({ key, label, icon: Icon, color }) => (
             <motion.button
               key={key}

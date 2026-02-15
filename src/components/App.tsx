@@ -11,12 +11,13 @@ import {
   X,
 } from 'lucide-react';
 import { useCompilerStore, useUIStore } from '../store';
-import { EditorPanel } from './EditorPanel';
-import { TransformationTimeline } from './TransformationTimeline';
-import { LingoPanel } from './LingoPanel';
-import { ChaosOrchestrator } from './ChaosOrchestrator';
-import { SemanticVerifier } from './SemanticVerifier';
-import { ExampleLibrary } from './ExampleLibrary';
+import { EditorPanel } from './EditorPanel.tsx';
+import { TransformationTimeline } from './TransformationTimeline.tsx';
+import { LingoPanel } from './LingoPanel.tsx';
+import { LingoCliPanel } from './LingoCliPanel.tsx';
+import { ChaosOrchestrator } from './ChaosOrchestrator.tsx';
+import { SemanticVerifier } from './SemanticVerifier.tsx';
+import { ExampleLibrary } from './ExampleLibrary.tsx';
 
 // ============================================================================
 // TAB CONFIGURATION
@@ -26,6 +27,7 @@ const TABS = [
   { id: 'editor', label: 'Editor', icon: Code2 },
   { id: 'timeline', label: 'Timeline', icon: GitBranch },
   { id: 'diagnostics', label: 'Diagnostics', icon: Layers },
+  { id: 'lingo-cli', label: 'Lingo CLI', icon: Zap },
   { id: 'orchestration', label: 'Orchestration', icon: Cog, researcherOnly: true },
 ];
 
@@ -94,10 +96,9 @@ export function App() {
                 className={`
                   flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-t-lg
                   transition-colors duration-200
-                  ${
-                    activeTab === tab.id
-                      ? 'bg-slate-800 text-white border-b-2 border-indigo-500'
-                      : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
+                  ${activeTab === tab.id
+                    ? 'bg-slate-800 text-white border-b-2 border-indigo-500'
+                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
                   }
                 `}
               >
@@ -130,6 +131,7 @@ export function App() {
                 {activeTab === 'editor' && <EditorPanel />}
                 {activeTab === 'timeline' && <TransformationTimeline />}
                 {activeTab === 'diagnostics' && <LingoPanel />}
+                {activeTab === 'lingo-cli' && <LingoCliPanel />}
                 {activeTab === 'orchestration' && mode === 'researcher' && (
                   <ChaosOrchestrator />
                 )}
@@ -159,10 +161,9 @@ function ModeToggle({ mode, setMode }: ModeToggleProps) {
         className={`
           flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium
           transition-all duration-200
-          ${
-            mode === 'student'
-              ? 'bg-indigo-500 text-white shadow-lg'
-              : 'text-slate-400 hover:text-slate-200'
+          ${mode === 'student'
+            ? 'bg-indigo-500 text-white shadow-lg'
+            : 'text-slate-400 hover:text-slate-200'
           }
         `}
       >
@@ -174,10 +175,9 @@ function ModeToggle({ mode, setMode }: ModeToggleProps) {
         className={`
           flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium
           transition-all duration-200
-          ${
-            mode === 'researcher'
-              ? 'bg-purple-500 text-white shadow-lg'
-              : 'text-slate-400 hover:text-slate-200'
+          ${mode === 'researcher'
+            ? 'bg-purple-500 text-white shadow-lg'
+            : 'text-slate-400 hover:text-slate-200'
           }
         `}
       >

@@ -183,7 +183,7 @@ export class IRGenerator {
 
   private generateIf(stmt: IfStatement, ir: IRInstruction[]): undefined {
     const testValue = this.generateNode(stmt.test, ir);
-    
+
     const consequentIR: IRInstruction[] = [];
     this.generateNode(stmt.consequent, consequentIR);
 
@@ -411,7 +411,7 @@ export class IRGenerator {
       op: 'CALL',
       target,
       value: expr.callee,
-      left: args as unknown as string,
+      args: args as (string | number)[],
       meta: 'USER_CODE',
     });
 
