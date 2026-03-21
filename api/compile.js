@@ -1,10 +1,7 @@
-import { execFile } from 'child_process';
-import path from 'path';
-import fs from 'fs/promises';
-import os from 'os';
-import { fileURLToPath } from 'url';
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const { execFile } = require('child_process');
+const path = require('path');
+const fs = require('fs').promises;
+const os = require('os');
 
 const COMPILER_BIN = path.resolve(
   __dirname,
@@ -12,7 +9,7 @@ const COMPILER_BIN = path.resolve(
   process.platform === 'win32' ? 'chaos-compiler.exe' : 'chaos-compiler'
 );
 
-async function runCompiler(filePath, options = {}) {
+function runCompiler(filePath, options = {}) {
   const args = [filePath, '--json'];
 
   if (options.mutate !== false) {
@@ -46,7 +43,7 @@ async function runCompiler(filePath, options = {}) {
   });
 }
 
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
   // Enable CORS
   res.setHeader('Access-Control-Allow-Credentials', 'true');
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -147,4 +144,4 @@ export default async function handler(req, res) {
       }
     }
   }
-}
+};

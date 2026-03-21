@@ -8,7 +8,7 @@
     "client": "cd client && npm run dev",
     "chaos": "concurrently --kill-others \"npm run server\" \"npm run client\"",
     "build": "cd client && npm install && npm run build",
-    "build-compiler": "gcc compiler/main.c compiler/lexer.c compiler/parser.c compiler/ast.c compiler/chaos.c -o compiler/chaos-compiler"
+    "build-compiler": "gcc -O2 compiler/main.c compiler/lexer.c compiler/parser.c compiler/ast.c compiler/chaos.c -o compiler/chaos-compiler -lm"
   },
   "devDependencies": {
     "concurrently": "^8.2.2"
