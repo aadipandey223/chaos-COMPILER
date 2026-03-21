@@ -1,0 +1,22 @@
+#ifndef TOKEN_H
+#define TOKEN_H
+
+typedef enum {
+    TOK_NUMBER, TOK_STRING, TOK_IDENT,
+    TOK_INT, TOK_RETURN, TOK_IF, TOK_ELSE, TOK_WHILE,
+    TOK_PLUS, TOK_MINUS, TOK_STAR, TOK_SLASH,
+    TOK_ASSIGN, TOK_EQ, TOK_NEQ, TOK_LT, TOK_GT, TOK_LEQ, TOK_GEQ,
+    TOK_BANG, TOK_AMPAMP, TOK_PIPEPIPE,
+    TOK_LPAREN, TOK_RPAREN, TOK_LBRACE, TOK_RBRACE,
+    TOK_LBRACKET, TOK_RBRACKET, TOK_SEMICOLON, TOK_COMMA,
+    TOK_EOF, TOK_UNKNOWN
+} TokenType;
+
+typedef struct {
+    TokenType type;
+    char* value;
+    int line;
+    int col;
+} Token;
+
+#endif

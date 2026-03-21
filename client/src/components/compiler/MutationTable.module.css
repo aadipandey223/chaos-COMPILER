@@ -1,0 +1,114 @@
+.wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.filters {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.pill {
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 500;
+  padding: 4px 12px;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--surface-3);
+  background: var(--surface-1);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.12s;
+}
+.pill:hover { background: var(--surface-2); color: var(--text-primary); }
+.pillActive {
+  background: var(--accent-light);
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.exportBtns {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.exportBtn {
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 500;
+  padding: 5px 12px;
+  background: var(--surface-1);
+  border: 1px solid var(--surface-3);
+  border-radius: var(--radius-md);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.12s;
+}
+.exportBtn:hover { background: var(--surface-2); color: var(--text-primary); }
+
+.tableWrap {
+  border: 1px solid var(--surface-3);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.table thead tr {
+  background: var(--surface-2);
+}
+
+.table th {
+  padding: 8px 14px;
+  text-align: left;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  border-bottom: 1px solid var(--surface-3);
+}
+
+.row {
+  cursor: pointer;
+  transition: background 0.1s;
+}
+.row:hover { background: var(--surface-2); }
+.row td {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--surface-3);
+  vertical-align: middle;
+}
+.row:last-child td { border-bottom: none; }
+
+.num  { color: var(--text-tertiary); font-size: 12px; width: 32px; }
+.line { font-family: var(--font-code); font-size: 12px; color: var(--text-secondary); }
+.code { font-family: var(--font-code); font-size: 12px; color: var(--text-primary); }
+
+.summary {
+  font-size: 12px;
+  color: var(--text-tertiary);
+  text-align: right;
+}
+
+.empty {
+  text-align: center;
+  padding: var(--space-8);
+  font-size: 13px;
+  color: var(--text-tertiary);
+  line-height: 1.8;
+}

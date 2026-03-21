@@ -1,0 +1,49 @@
+.shell {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+  background: var(--surface-0);
+}
+
+.progress {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: 0 var(--space-6);
+  height: 48px;
+  border-bottom: 1px solid var(--surface-3);
+  background: var(--surface-1);
+  flex-shrink: 0;
+}
+
+.progressDots {
+  display: flex;
+  gap: var(--space-2);
+  align-items: center;
+}
+
+.dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--surface-3);
+  border: none;
+  cursor: pointer;
+  transition: background 0.15s, transform 0.15s;
+  padding: 0;
+}
+.dot:hover { transform: scale(1.2); }
+.dotDone   { background: var(--accent-light); border: 2px solid var(--accent); }
+.dotActive { background: var(--accent); transform: scale(1.2); }
+
+.stageLabel {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.stageArea {
+  flex: 1;
+  overflow: hidden;
+}

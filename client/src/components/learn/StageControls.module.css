@@ -1,0 +1,57 @@
+.controls {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: 0 var(--space-6);
+  height: 56px;
+  border-top: 1px solid var(--surface-3);
+  background: var(--surface-1);
+  flex-shrink: 0;
+}
+
+.btn {
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 500;
+  padding: 7px 16px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--surface-3);
+  background: var(--surface-0);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.12s;
+  white-space: nowrap;
+}
+.btn:hover:not(:disabled) { background: var(--surface-2); color: var(--text-primary); }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.btnPrimary {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+.btnPrimary:hover:not(:disabled) { background: var(--accent-dark); border-color: var(--accent-dark); }
+
+.speed {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-left: auto;
+}
+
+.speedLabel {
+  font-size: 12px;
+  color: var(--text-tertiary);
+}
+
+.slider {
+  width: 80px;
+  accent-color: var(--accent);
+}
+
+.speedVal {
+  font-size: 12px;
+  font-family: var(--font-code);
+  color: var(--text-secondary);
+  min-width: 24px;
+}

@@ -1,0 +1,122 @@
+.wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.filters {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.pill {
+  padding: 3px 10px;
+  border-radius: 12px;
+  border: 1px solid #2a2a2a;
+  background: transparent;
+  color: #888580;
+  font-size: 11px;
+  font-family: 'IBM Plex Mono', monospace;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.pill:hover {
+  border-color: #888580;
+  color: #e8e6e0;
+}
+
+.pillActive {
+  border-color: #e05c3a;
+  color: #e05c3a;
+}
+
+.exportBtns {
+  display: flex;
+  gap: 8px;
+}
+
+.exportBtn {
+  padding: 4px 12px;
+  border: 1px solid #2a2a2a;
+  border-radius: 4px;
+  background: transparent;
+  color: #888580;
+  font-size: 11px;
+  font-family: 'IBM Plex Sans', sans-serif;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.exportBtn:hover {
+  border-color: #e05c3a;
+  color: #e05c3a;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+  font-family: 'IBM Plex Mono', monospace;
+}
+
+.table th {
+  text-align: left;
+  padding: 8px 12px;
+  color: #888580;
+  border-bottom: 1px solid #2a2a2a;
+  font-weight: 400;
+  font-size: 11px;
+  letter-spacing: 0.05em;
+}
+
+.table td {
+  padding: 7px 12px;
+  border-bottom: 1px solid #1a1a1a;
+  vertical-align: middle;
+}
+
+.table tr:hover td {
+  background: #1a1a1a;
+}
+
+.badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 10px;
+  border: 1px solid currentColor;
+  white-space: nowrap;
+}
+
+.lineNum {
+  color: #888580;
+}
+
+.before { color: #f09595; }
+.after  { color: #9fe1cb; }
+
+.summary {
+  font-size: 11px;
+  color: #888580;
+  font-family: 'IBM Plex Sans', sans-serif;
+  padding-top: 4px;
+}
+
+.empty {
+  color: #888580;
+  font-family: 'IBM Plex Sans', sans-serif;
+  font-size: 13px;
+  padding: 32px 0;
+  text-align: center;
+  line-height: 1.8;
+}

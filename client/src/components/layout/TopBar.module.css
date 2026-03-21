@@ -1,0 +1,100 @@
+.topbar {
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 var(--space-5);
+  background: var(--surface-0);
+  border-bottom: 1px solid var(--surface-3);
+  flex-shrink: 0;
+  z-index: 10;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-family: var(--font-display);
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--text-primary);
+  text-decoration: none;
+}
+
+.brandAccent { font-size: 18px; }
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+/* Status badge */
+.statusBadge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  padding: 4px 10px;
+  border-radius: var(--radius-full);
+  border: 1px solid;
+}
+
+.idle      { color: var(--text-tertiary);  border-color: var(--surface-3);  background: var(--surface-1); }
+.compiling { color: var(--warning);        border-color: var(--warning);     background: var(--warning-light); }
+.success   { color: var(--success);        border-color: var(--success);     background: var(--success-light); }
+.error     { color: var(--error);          border-color: var(--error);       background: var(--error-light); }
+
+.uploadBtn {
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 500;
+  padding: 7px 14px;
+  background: var(--surface-1);
+  border: 1px solid var(--surface-3);
+  border-radius: var(--radius-md);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.uploadBtn:hover {
+  background: var(--surface-2);
+  color: var(--text-primary);
+}
+
+.compileBtn {
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 600;
+  padding: 7px 18px;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.compileBtn:hover:not(:disabled) { background: var(--accent-dark); }
+.compileBtn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.themeToggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  flex-shrink: 0;
+}
+.themeToggle:hover {
+  background: var(--surface-2);
+  color: var(--text-primary);
+  border-color: var(--border-strong);
+}
+.themeToggle:active { transform: scale(0.95); }

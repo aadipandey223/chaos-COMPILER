@@ -1,0 +1,21 @@
+.divider {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: var(--space-3) 0;
+}
+
+.divider::before,
+.divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--surface-3);
+}
+
+.label {
+  font-size: 11px;
+  color: var(--text-tertiary);
+  white-space: nowrap;
+  font-family: var(--font-body);
+}

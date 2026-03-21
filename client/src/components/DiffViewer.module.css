@@ -1,0 +1,83 @@
+.wrapper {
+  display: flex;
+  gap: 0;
+  height: calc(100vh - 120px);
+  border: 1px solid #2a2a2a;
+  border-radius: 8px;
+  overflow: hidden;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 12px;
+}
+
+.panel {
+  flex: 1;
+  overflow-y: auto;
+  background: #141414;
+}
+
+.panel + .panel {
+  border-left: 1px solid #2a2a2a;
+}
+
+.panelHeader {
+  position: sticky;
+  top: 0;
+  padding: 8px 16px;
+  background: #1a1a1a;
+  border-bottom: 1px solid #2a2a2a;
+  font-size: 11px;
+  color: #888580;
+  z-index: 1;
+  letter-spacing: 0.05em;
+}
+
+.line {
+  display: flex;
+  align-items: baseline;
+  padding: 1px 8px;
+  min-height: 20px;
+  white-space: pre;
+}
+
+.lineNum {
+  min-width: 36px;
+  color: #444444;
+  user-select: none;
+  text-align: right;
+  padding-right: 12px;
+  flex-shrink: 0;
+}
+
+.lineContent {
+  flex: 1;
+  color: #e8e6e0;
+}
+
+.mutatedOrig {
+  background: #2a1a1a;
+  border-left: 2px solid #9e3a3a;
+}
+
+.mutatedNew {
+  background: #1a2a1a;
+  border-left: 2px solid #3a9e6e;
+}
+
+.mutationTag {
+  margin-left: 12px;
+  color: #e05c3a;
+  font-size: 10px;
+  opacity: 0.8;
+  flex-shrink: 0;
+  font-style: italic;
+  white-space: nowrap;
+}
+
+.banner {
+  padding: 12px 16px;
+  background: #2a2a1a;
+  border-bottom: 1px solid #9e8a3a;
+  color: #9e8a3a;
+  font-size: 12px;
+  font-family: 'IBM Plex Sans', sans-serif;
+}
