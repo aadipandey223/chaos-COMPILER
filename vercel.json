@@ -1,6 +1,14 @@
 {
-  "buildCommand": "npm run build",
+  "buildCommand": "npm install && npm run build-compiler && cd client && npm install && npm run build",
   "outputDirectory": "client/dist",
   "installCommand": "npm install",
-  "framework": null
+  "framework": null,
+  "functions": {
+    "api/**/*.js": {
+      "runtime": "nodejs20.x"
+    }
+  },
+  "env": {
+    "NODE_ENV": "production"
+  }
 }
