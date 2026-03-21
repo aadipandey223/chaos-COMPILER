@@ -22,10 +22,12 @@ async function runCompiler(filePath, options = {}) {
   }
 
   return new Promise((resolve, reject) => {
-    execFile(COMPILER_BIN, args, { timeout: 10000 }, (error, stdout, stderr) => {
+    // Timeout: 30s for Vercel (adjust based on plan), 10s for local
+    const timeout = process.env.VERCEL ? 30000 : 10000;
+    execFile(COMPILER_BIN, args, { timeout }, (error, stdout, stderr) => {
       if (error) {
         if (error.killed) {
-          return reject(new Error('Compiler timed out after 10 seconds'));
+          return reject(new Error(`Compiler timed out after ${timeout / 1000}s`));
         }
         return reject(new Error(stderr || stdout || error.message));
       }
@@ -41,21 +43,6 @@ async function runCompiler(filePath, options = {}) {
         reject(new Error(`Failed to parse compiler output:\n${stdout}`));
       }
     });
-  });
-}
-
-function parseBody(req) {
-  return new Promise((resolve, reject) => {
-    let data = '';
-    req.on('data', chunk => data += chunk);
-    req.on('end', () => {
-      try {
-        resolve(JSON.parse(data));
-      } catch {
-        resolve({});
-      }
-    });
-    req.on('error', reject);
   });
 }
 
@@ -81,14 +68,26 @@ export default async function handler(req, res) {
   let tempFilePath = null;
 
   try {
-    // Parse JSON body
-    const body = typeof req.body === 'string' ? JSON.parse(req.body) : (req.body || {});
+    // Verify compiler binary exists
+    try {
+      await fs.access(COMPILER_BIN);
+    } catch {
+      console.error(`Compiler binary not found at: ${COMPILER_BIN}`);
+      return res.status(500).json({
+        ok: false,
+        error: 'Compiler binary not found. Please rebuild and redeploy.',
+        type: 'deployment_error'
+      });
+    }
+
+    // Parse JSON body (Vercel automatically parses application/json)
+    const body = req.body || {};
     const { code, mutate, intensity, seed } = body;
 
-    if (!code) {
+    if (!code || typeof code !== 'string') {
       return res.status(400).json({
         ok: false,
-        error: 'Provide code in request body.',
+        error: 'Provide code in request body as a string.',
         type: 'compiler_error'
       });
     }
@@ -96,7 +95,17 @@ export default async function handler(req, res) {
     // Write code to temp file
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
     tempFilePath = path.join(os.tmpdir(), `chaos-code-${uniqueSuffix}.c`);
-    await fs.writeFile(tempFilePath, code);
+    
+    try {
+      await fs.writeFile(tempFilePath, code, 'utf8');
+    } catch (err) {
+      console.error('Failed to write temp file:', err);
+      return res.status(500).json({
+        ok: false,
+        error: 'Failed to write temporary file.',
+        type: 'server_error'
+      });
+    }
 
     let result;
     try {
@@ -106,6 +115,7 @@ export default async function handler(req, res) {
         seed: seed || null,
       });
     } catch (compilerError) {
+      console.error('Compiler error:', compilerError);
       return res.status(400).json({
         ok: false,
         error: compilerError.message,
@@ -121,15 +131,20 @@ export default async function handler(req, res) {
     });
 
   } catch (err) {
-    console.error('Compile error:', err);
+    console.error('API error:', err);
     return res.status(500).json({
       ok: false,
       error: 'Internal server error: ' + err.message,
       type: 'server_error'
     });
   } finally {
+    // Clean up temp file
     if (tempFilePath) {
-      try { await fs.unlink(tempFilePath); } catch (_) {}
+      try { 
+        await fs.unlink(tempFilePath); 
+      } catch (_) {
+        // Ignore cleanup errors
+      }
     }
   }
 }
