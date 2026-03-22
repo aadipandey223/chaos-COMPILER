@@ -1,0 +1,125 @@
+.feedbackPanel {
+  width: 260px;
+  flex-shrink: 0;
+  background: #1a1917;
+  border-left: 0.5px solid #2a2825;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  overflow-y: auto;
+}
+
+.title {
+  font-family: var(--font-display);
+  font-size: 14px;
+  font-weight: 700;
+  color: #e8e4dd;
+  margin: 0;
+  padding-bottom: 12px;
+  border-bottom: 0.5px solid #2a2825;
+}
+
+.scoreRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.scoreLabel {
+  font-family: var(--font-body);
+  font-size: 13px;
+  color: #6b6760;
+}
+
+.scoreValue {
+  font-family: var(--font-code);
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.scoreBar {
+  height: 4px;
+  background: #2a2825;
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.scoreFill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.4s ease, background 0.3s ease;
+}
+
+.countsRow {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  padding: 8px 0;
+  border-bottom: 0.5px solid #2a2825;
+}
+
+.countItem {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.countNum {
+  font-family: var(--font-code);
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.countLabel {
+  font-family: var(--font-body);
+  font-size: 10px;
+  color: #6b6760;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.details {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.feedbackItem {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 8px;
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 4px;
+  font-family: var(--font-body);
+  font-size: 12px;
+  line-height: 1.5;
+  color: #9c9890;
+}
+
+.feedbackDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  margin-top: 6px;
+  flex-shrink: 0;
+}
+
+.successState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 0;
+  gap: 12px;
+  text-align: center;
+  font-family: var(--font-body);
+  font-size: 13px;
+  color: #9c9890;
+}
+
+.successIcon {
+  font-size: 36px;
+}

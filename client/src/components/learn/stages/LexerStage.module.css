@@ -93,20 +93,12 @@
   opacity: 0.85;
 }
 
-/* DFA */
-.dfaWrap {
+/* DFA Editor area */
+.dfaEditorArea {
   flex: 1;
   display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: var(--space-4);
   overflow: hidden;
-}
-
-.dfaSvg {
-  width: 100%;
-  max-width: 620px;
-  height: auto;
+  position: relative;
 }
 
 .dfaNote {
@@ -116,6 +108,11 @@
   border-top: 1px solid var(--surface-3);
   background: var(--surface-1);
   flex-shrink: 0;
+}
+
+.hint {
+  color: var(--text-tertiary);
+  font-size: 11px;
 }
 
 /* Token stream */

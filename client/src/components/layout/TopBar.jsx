@@ -1,6 +1,6 @@
 import React, { useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useCompiler } from '../../store/useCompilerStore';
 import { useThemeContext } from '../../context/ThemeContext';
 import { compileCode, compileFile } from '../../api/compile';
@@ -15,11 +15,29 @@ function StatusBadge({ status }) {
     error:     { label: 'Error',       cls: styles.error     },
   };
   const { label, cls } = map[status] || map.idle;
+
+  const animateProps = {
+    scale: [0.8, 1.1, 1],
+    opacity: [0, 1],
+  };
+
+  if (status === 'error') {
+    animateProps.x = [0, -4, 4, -2, 2, 0];
+  } else if (status === 'success') {
+    animateProps.backgroundColor = ['var(--success)', 'var(--success-light)'];
+  }
+
   return (
-    <div className={`${styles.statusBadge} ${cls}`}>
+    <motion.div
+      key={status}
+      initial={{ scale: 0.8, opacity: 0 }}
+      animate={animateProps}
+      transition={{ duration: 0.3 }}
+      className={`${styles.statusBadge} ${cls}`}
+    >
       {status === 'compiling' && <Spinner size={12} />}
       {label}
-    </div>
+    </motion.div>
   );
 }
 
@@ -63,7 +81,11 @@ export default function TopBar() {
       </Link>
 
       <div className={styles.actions}>
-        <StatusBadge status={state.status} />
+        <div style={{ position: 'relative', height: 26, width: 90, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <AnimatePresence mode="wait">
+             <StatusBadge status={state.status} />
+          </AnimatePresence>
+        </div>
 
         <input
           type="file"
@@ -77,7 +99,10 @@ export default function TopBar() {
           className={styles.uploadBtn}
           onClick={() => fileInputRef.current?.click()}
         >
-          Upload file
+          <svg className={styles.uploadSvg}>
+            <rect x="1" y="1" rx="5" ry="5" />
+          </svg>
+          <span style={{position:'relative'}}>Upload file</span>
         </button>
 
         <button
@@ -101,10 +126,11 @@ export default function TopBar() {
         </button>
 
         <motion.button
-          className={styles.compileBtn}
+          className={`${styles.compileBtn} ${state.status === 'compiling' ? styles.isCompiling : ''}`}
           onClick={handleCompile}
           disabled={state.status === 'compiling' || !state.code.trim()}
-          whileTap={{ scale: 0.97 }}
+          whileHover={{ scale: 1.03, filter: 'brightness(1.1)' }}
+          whileTap={{ scale: 0.96 }}
           transition={{ duration: 0.1 }}
         >
           {state.status === 'compiling' ? 'Compiling…' : 'Compile'}

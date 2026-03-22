@@ -52,9 +52,15 @@ router.post('/compile', (req, res, next) => {
     let result;
     try {
       result = await runCompiler(tempFilePath, {
-        mutate:    req.body.mutate    !== false,
-        intensity: req.body.intensity || 'low',
-        seed:      req.body.seed      || null,
+        mutate:           req.body.mutate !== false,
+        count:            req.body.count            || null,
+        intensity:        req.body.intensity        || 'low',
+        seed:             req.body.seed             || null,
+        safeMode:         req.body.safeMode         || false,
+        excludeFunctions: req.body.excludeFunctions || [],
+        excludeLines:     req.body.excludeLines     || [],
+        chainDepth:       req.body.chainDepth       || 1,
+        targetMask:       req.body.targetMask       || 0,
       });
     } catch (compilerError) {
       return res.status(400).json({

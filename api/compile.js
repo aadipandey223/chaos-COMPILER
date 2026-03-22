@@ -14,8 +14,31 @@ function runCompiler(filePath, options = {}) {
 
   if (options.mutate !== false) {
     args.push('--mutate');
-    args.push('--intensity', options.intensity || 'low');
+
+    if (options.count && Number.isInteger(Number(options.count))) {
+      args.push('--count', String(options.count));
+    } else {
+      args.push('--intensity', options.intensity || 'low');
+    }
+
     if (options.seed) args.push('--seed', String(options.seed));
+    if (options.safeMode) args.push('--safe');
+
+    if (options.weightsFile) {
+      args.push('--weights', options.weightsFile);
+    }
+    if (options.excludeFunctions && options.excludeFunctions.length > 0) {
+      args.push('--exclude-fns', options.excludeFunctions.join(','));
+    }
+    if (options.excludeLines && options.excludeLines.length > 0) {
+      args.push('--exclude-lines', options.excludeLines.join(','));
+    }
+    if (options.chainDepth && options.chainDepth > 1) {
+      args.push('--chain', String(options.chainDepth));
+    }
+    if (options.targetMask && options.targetMask > 0) {
+      args.push('--targets', String(options.targetMask));
+    }
   }
 
   return new Promise((resolve, reject) => {
@@ -79,7 +102,10 @@ module.exports = async function handler(req, res) {
 
     // Parse JSON body (Vercel automatically parses application/json)
     const body = req.body || {};
-    const { code, mutate, intensity, seed } = body;
+    const { 
+      code, mutate, intensity, seed, count, safeMode, 
+      excludeFunctions, excludeLines, chainDepth, targetMask 
+    } = body;
 
     if (!code || typeof code !== 'string') {
       return res.status(400).json({
@@ -110,6 +136,12 @@ module.exports = async function handler(req, res) {
         mutate: mutate !== false,
         intensity: intensity || 'low',
         seed: seed || null,
+        count: count || null,
+        safeMode: safeMode || false,
+        excludeFunctions: excludeFunctions || [],
+        excludeLines: excludeLines || [],
+        chainDepth: chainDepth || 1,
+        targetMask: targetMask || 0,
       });
     } catch (compilerError) {
       console.error('Compiler error:', compilerError);

@@ -1,4 +1,6 @@
-import React, { useRef, useMemo } from 'react';
+import React, { useRef, useMemo, useState } from 'react';
+import { motion } from 'framer-motion';
+import Badge from '../ui/Badge';
 import styles from './DiffViewer.module.css';
 
 /**
@@ -70,6 +72,8 @@ function buildMutatedLines(originalLines, mutations) {
 const DiffViewer = ({ code, mutations }) => {
   const leftRef  = useRef(null);
   const rightRef = useRef(null);
+  
+  const [scrollPastTop, setScrollPastTop] = useState(false);
 
   const originalLines = useMemo(() => (code || '').split('\n'), [code]);
   const mutatedLines  = useMemo(
@@ -77,25 +81,38 @@ const DiffViewer = ({ code, mutations }) => {
     [originalLines, mutations]
   );
 
-  // Build a set of mutated line numbers (1-indexed) for highlighting
-  const mutatedLineNums = useMemo(() => {
-    const s = new Set();
-    (mutations || []).forEach(m => { if (m.line) s.add(m.line); });
-    return s;
+  // Build a map of mutated line numbers (1-indexed) to mutation object for highlighting
+  const mutationsMap = useMemo(() => {
+    const map = new Map();
+    (mutations || []).forEach(m => { if (m.line) map.set(m.line, m); });
+    return map;
   }, [mutations]);
 
   const hasMutations = mutations && mutations.length > 0;
 
-  const handleLeftScroll  = (e) => { if (rightRef.current) rightRef.current.scrollTop = e.target.scrollTop; };
-  const handleRightScroll = (e) => { if (leftRef.current)  leftRef.current.scrollTop  = e.target.scrollTop; };
+  const handleLeftScroll  = (e) => { 
+    setScrollPastTop(e.target.scrollTop > 5);
+    if (rightRef.current) rightRef.current.scrollTop = e.target.scrollTop; 
+  };
+  const handleRightScroll = (e) => { 
+    setScrollPastTop(e.target.scrollTop > 5);
+    if (leftRef.current)  leftRef.current.scrollTop  = e.target.scrollTop; 
+  };
 
-  const maxLines = Math.max(originalLines.length, mutatedLines.length);
+  const headerClass = `${styles.panelHeader} ${scrollPastTop ? styles.panelHeaderShadow : ''}`;
 
   return (
     <div className={styles.wrapper}>
       {/* ── LEFT: Original ─────────────────────────────────────────── */}
-      <div className={styles.panel} ref={leftRef} onScroll={handleLeftScroll}>
-        <div className={styles.panelHeader}>ORIGINAL</div>
+      <motion.div 
+        className={styles.panel} 
+        ref={leftRef} 
+        onScroll={handleLeftScroll}
+        initial={{ x: -30, opacity: 0 }}
+        animate={{ x: 0, opacity: 1 }}
+        transition={{ duration: 0.4 }}
+      >
+        <div className={headerClass}>ORIGINAL</div>
 
         {!hasMutations && (
           <div className={styles.banner}>
@@ -106,22 +123,37 @@ const DiffViewer = ({ code, mutations }) => {
 
         {originalLines.map((line, idx) => {
           const lineNum   = idx + 1;
-          const isMutated = mutatedLineNums.has(lineNum);
+          const mutation  = mutationsMap.get(lineNum);
+          const isMutated = !!mutation;
           return (
             <div
               key={idx}
               className={`${styles.line} ${isMutated ? styles.mutatedOrig : ''}`}
             >
               <span className={styles.lineNum}>{lineNum}</span>
-              <span className={styles.lineContent}>{line || ' '}</span>
+              <span className={styles.lineContent}>
+                {line || ' '}
+                {isMutated && (
+                  <div className={styles.centerBadge}>
+                    <Badge mutationType={mutation.type} />
+                  </div>
+                )}
+              </span>
             </div>
           );
         })}
-      </div>
+      </motion.div>
 
       {/* ── RIGHT: Mutated ─────────────────────────────────────────── */}
-      <div className={styles.panel} ref={rightRef} onScroll={handleRightScroll}>
-        <div className={styles.panelHeader}>MUTATED</div>
+      <motion.div 
+        className={styles.panel} 
+        ref={rightRef} 
+        onScroll={handleRightScroll}
+        initial={{ x: 30, opacity: 0 }}
+        animate={{ x: 0, opacity: 1 }}
+        transition={{ duration: 0.4 }}
+      >
+        <div className={headerClass}>MUTATED</div>
 
         {!hasMutations && (
           <div className={styles.banner}>
@@ -134,7 +166,7 @@ const DiffViewer = ({ code, mutations }) => {
           const lineNum   = idx + 1;
           // A line is "new" if it doesn't exist in original (injected dead code)
           const isInjected = idx >= originalLines.length;
-          const isMutated  = mutatedLineNums.has(lineNum) || isInjected;
+          const isMutated  = mutationsMap.has(lineNum) || isInjected;
           return (
             <div
               key={idx}
@@ -145,7 +177,7 @@ const DiffViewer = ({ code, mutations }) => {
             </div>
           );
         })}
-      </div>
+      </motion.div>
     </div>
   );
 };

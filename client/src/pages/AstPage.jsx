@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import CodeMirror from '@uiw/react-codemirror';
 import { json } from '@codemirror/lang-json';
 import { oneDark } from '@codemirror/theme-one-dark';
-import { select } from 'd3';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useCompiler } from '../store/useCompilerStore';
 import { adaptAst } from '../utils/astAdapter';
 import AstTree from '../components/compiler/AstTree';
@@ -98,16 +98,28 @@ export default function AstPage() {
   const typesSet = new Set();
   collectTypes(adapted, typesSet);
 
+  const toolbarVariants = {
+    hidden: {},
+    visible: {
+      transition: { staggerChildren: 0.03 }
+    }
+  };
+
+  const tbItem = {
+    hidden: { opacity: 0, y: -10 },
+    visible: { opacity: 1, y: 0, transition: { duration: 0.25 } }
+  };
+
   return (
     <div className={styles.page}>
       {/* Toolbar */}
-      <div className={styles.toolbar}>
+      <motion.div className={styles.toolbar} variants={toolbarVariants} initial="hidden" animate="visible">
         <div className={styles.toolbarLeft}>
-          <span className={styles.meta}>
+          <motion.span variants={tbItem} className={styles.meta}>
             {total} nodes · {typesSet.size} types
-          </span>
+          </motion.span>
 
-          <div className={styles.viewToggle}>
+          <motion.div variants={tbItem} className={styles.viewToggle}>
             <button
               className={`${styles.viewBtn} ${viewMode === 'tree' ? styles.viewBtnActive : ''}`}
               onClick={() => setViewMode('tree')}
@@ -120,10 +132,11 @@ export default function AstPage() {
             >
               JSON
             </button>
-          </div>
+          </motion.div>
 
           {viewMode === 'tree' && (
-            <input
+            <motion.input
+              variants={tbItem}
               type="text"
               placeholder="Search nodes…"
               value={search}
@@ -136,25 +149,30 @@ export default function AstPage() {
         <div className={styles.toolbarRight}>
           {viewMode === 'tree' && (
             <>
-              <div className={styles.legend}>
+              <motion.div variants={tbItem} className={styles.legend}>
                 {LEGEND.map(({ color, label }) => (
                   <div key={label} className={styles.legendItem}>
                     <span className={styles.legendDot} style={{ background: color }} />
                     <span>{label}</span>
                   </div>
                 ))}
-              </div>
-              <button className={styles.toolBtn} onClick={handleExportPng}>
+              </motion.div>
+              <motion.button variants={tbItem} className={styles.toolBtn} onClick={handleExportPng}>
                 Export SVG
-              </button>
+              </motion.button>
             </>
           )}
         </div>
-      </div>
+      </motion.div>
 
       {/* Content */}
-      <div className={styles.content}>
-        <div className={styles.treePane}>
+      <motion.div
+        className={styles.content}
+        initial={{ opacity: 0, scale: 0.96 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+      >
+        <div className={styles.treePane} style={{ overflow: 'visible' }}>
           {viewMode === 'tree' ? (
             <AstTree
               data={adapted}
@@ -174,10 +192,20 @@ export default function AstPage() {
             </div>
           )}
         </div>
-        {viewMode === 'tree' && (
-          <NodeDetail node={selected} />
-        )}
-      </div>
+        <AnimatePresence>
+          {viewMode === 'tree' && (
+            <motion.div
+              initial={{ x: 200, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              exit={{ x: 200, opacity: 0 }}
+              transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+              style={{ display: 'flex' }}
+            >
+              <NodeDetail node={selected} />
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </motion.div>
     </div>
   );
 }

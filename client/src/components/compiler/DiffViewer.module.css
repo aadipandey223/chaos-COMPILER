@@ -25,7 +25,12 @@
   color: var(--code-muted);
   background: var(--code-surface);
   border-bottom: 1px solid var(--code-border);
-  z-index: 1;
+  z-index: 10;
+  transition: box-shadow 0.2s;
+}
+
+.panelHeaderShadow {
+  box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.4);
 }
 
 .banner {
@@ -39,7 +44,7 @@
 
 .line {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   padding: 1px 0;
   min-height: 22px;
   position: relative;
@@ -60,18 +65,31 @@
   color: var(--code-text);
   white-space: pre;
   padding-right: var(--space-4);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
-/* Original panel — highlight mutated lines with subtle red tint */
+@keyframes flashOrig {
+  0% { background: rgba(194, 59, 42, 0.35); }
+  100% { background: rgba(194, 59, 42, 0.08); }
+}
+
+@keyframes flashNew {
+  0% { background: rgba(160, 96, 32, 0.4); }
+  100% { background: rgba(160, 96, 32, 0.12); }
+}
+
 .mutatedOrig {
   background: rgba(194, 59, 42, 0.08);
   border-left: 2px solid var(--error);
+  animation: flashOrig 0.6s ease-out;
 }
 
-/* Mutated panel — highlight with amber + accent marker */
 .mutatedNew {
   background: rgba(160, 96, 32, 0.12);
   border-left: 2px solid var(--accent);
+  animation: flashNew 0.6s ease-out;
 }
 
 .mutatedNew .lineNum::before {
@@ -82,13 +100,14 @@
   color: var(--accent);
 }
 
-.mutationTag {
-  font-size: 10px;
-  color: var(--accent);
-  background: rgba(212, 82, 42, 0.15);
-  padding: 1px 6px;
-  border-radius: var(--radius-sm);
-  margin-left: var(--space-2);
-  white-space: nowrap;
-  flex-shrink: 0;
+.centerBadge {
+  margin-left: auto;
+  transition: transform 0.2s, box-shadow 0.2s;
+  cursor: default;
+  z-index: 5;
+}
+
+.centerBadge:hover {
+  transform: scale(1.1);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.5);
 }

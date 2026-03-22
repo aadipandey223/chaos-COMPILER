@@ -23,16 +23,14 @@ export const compileCode = async (code, options = {}) => {
 
 export const compileFile = async (file, options = {}) => {
   try {
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('mutate',    'true');
-    formData.append('intensity', options.intensity || 'low');
-    if (options.seed) formData.append('seed', options.seed);
-
-    const response = await api.post('/compile', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' }
+    const text = await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => resolve(e.target.result);
+      reader.onerror = (e) => reject(new Error('Failed to read file'));
+      reader.readAsText(file);
     });
-    return response.data;
+    
+    return await compileCode(text, options);
   } catch (err) {
     if (err.response && err.response.data && err.response.data.error) {
       throw new Error(err.response.data.error);

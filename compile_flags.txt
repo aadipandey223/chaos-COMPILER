@@ -1,0 +1,5 @@
+-IE:/ucrt64/include
+-IE:/ucrt64/lib/gcc/x86_64-w64-mingw32/15.2.0/include
+-IE:/ucrt64/lib/gcc/x86_64-w64-mingw32/15.2.0/include-fixed
+--target=x86_64-w64-mingw32
+-std=c17

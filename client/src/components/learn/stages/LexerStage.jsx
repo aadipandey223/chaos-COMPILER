@@ -1,6 +1,12 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { TOKENS, DFA_STATES, DFA_TRANSITIONS, TOKEN_DFA_STATE, SOURCE } from '../../../utils/tutorialData';
+import { TOKENS, TOKEN_DFA_STATE, SOURCE } from '../../../utils/tutorialData';
+import { DFAProvider, useDFA } from '../../../store/useDFAStore';
+import { generateDFA } from '../../../utils/dfaGenerator';
+import { validateDFA } from '../../../utils/dfaValidator';
+import DFACanvas from '../../dfa/DFACanvas';
+import DFAToolbar from '../../dfa/DFAToolbar';
+import DFAFeedbackPanel from '../../dfa/DFAFeedbackPanel';
 import styles from './LexerStage.module.css';
 
 const TOKEN_COLORS = {
@@ -14,82 +20,21 @@ function tokenColor(type) {
   return TOKEN_COLORS[type] || TOKEN_COLORS.default;
 }
 
-function DfaDiagram({ activeState }) {
-  const stateMap = Object.fromEntries(DFA_STATES.map(s => [s.id, s]));
-  const W = 620, H = 260;
-
-  return (
-    <svg viewBox={`0 0 ${W} ${H}`} className={styles.dfaSvg}>
-      {/* Edges */}
-      {DFA_TRANSITIONS.map((t, i) => {
-        const from = stateMap[t.from];
-        const to   = stateMap[t.to];
-        if (!from || !to) return null;
-        const isSelf = t.from === t.to;
-        if (isSelf) {
-          return (
-            <g key={i}>
-              <path
-                d={`M${from.x},${from.y - 24} C${from.x - 30},${from.y - 60} ${from.x + 30},${from.y - 60} ${from.x},${from.y - 24}`}
-                fill="none" stroke="var(--surface-3)" strokeWidth="1.5"
-              />
-              <text x={from.x} y={from.y - 68} textAnchor="middle" fontSize="9" fill="var(--text-tertiary)">{t.label}</text>
-            </g>
-          );
-        }
-        const mx = (from.x + to.x) / 2;
-        const my = (from.y + to.y) / 2 - 18;
-        return (
-          <g key={i}>
-            <line x1={from.x + 24} y1={from.y} x2={to.x - 24} y2={to.y} stroke="var(--surface-3)" strokeWidth="1.5" markerEnd="url(#arrow)" />
-            <text x={mx} y={my} textAnchor="middle" fontSize="9" fill="var(--text-tertiary)">{t.label}</text>
-          </g>
-        );
-      })}
-
-      {/* Arrow marker */}
-      <defs>
-        <marker id="arrow" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
-          <path d="M0,0 L0,6 L6,3 z" fill="var(--surface-3)" />
-        </marker>
-      </defs>
-
-      {/* Nodes */}
-      {DFA_STATES.map(s => {
-        const isActive = s.id === activeState;
-        const isAccept = s.id === 'ACCEPT';
-        return (
-          <g key={s.id}>
-            <circle
-              cx={s.x} cy={s.y} r={24}
-              fill={isActive ? 'var(--accent-light)' : 'var(--surface-1)'}
-              stroke={isActive ? 'var(--accent)' : 'var(--surface-3)'}
-              strokeWidth={isActive ? 2 : 1.5}
-              style={isActive ? { filter: 'drop-shadow(0 0 8px var(--accent))' } : {}}
-            />
-            {isAccept && (
-              <circle cx={s.x} cy={s.y} r={20} fill="none" stroke="var(--surface-3)" strokeWidth="1" />
-            )}
-            <text x={s.x} y={s.y + 4} textAnchor="middle" fontSize="11" fontWeight="600"
-              fill={isActive ? 'var(--accent)' : 'var(--text-secondary)'}
-              fontFamily="var(--font-code)"
-            >
-              {s.label}
-            </text>
-          </g>
-        );
-      })}
-    </svg>
-  );
-}
-
-export default function LexerStage({ step, speed, playing, onStepComplete }) {
+/* ── Main inner component (needs DFA context) ──────────────────────── */
+function LexerStageInner({ step, speed, playing, onStepComplete }) {
   const maxStep = TOKENS.length - 1;
   const currentStep = Math.min(step, maxStep);
   const token = TOKENS[currentStep];
   const activeState = token ? TOKEN_DFA_STATE[token.type] || 'START' : 'START';
   const visibleTokens = TOKENS.slice(0, currentStep + 1);
   const streamRef = useRef(null);
+
+  const { state: dfaState, dispatch: dfaDispatch } = useDFA();
+  const { mode, userGraph, autoGraph, validation } = dfaState;
+
+  // Which graph to display
+  const displayNodes = mode === 'auto' ? autoGraph.nodes : userGraph.nodes;
+  const displayEdges = mode === 'auto' ? autoGraph.edges : userGraph.edges;
 
   // Auto-play
   useEffect(() => {
@@ -105,6 +50,98 @@ export default function LexerStage({ step, speed, playing, onStepComplete }) {
       streamRef.current.scrollLeft = streamRef.current.scrollWidth;
     }
   }, [visibleTokens.length]);
+
+  // On mount: auto-generate DFA from tutorial source
+  useEffect(() => {
+    (async () => {
+      try {
+        dfaDispatch({ type: 'SET_LOADING', payload: true });
+        const result = await generateDFA(SOURCE);
+        dfaDispatch({
+          type: 'SET_AUTO_GRAPH',
+          payload: { nodes: result.states, edges: result.transitions },
+        });
+      } catch (err) {
+        dfaDispatch({ type: 'SET_ERROR', payload: err.message });
+      } finally {
+        dfaDispatch({ type: 'SET_LOADING', payload: false });
+      }
+    })();
+  }, [dfaDispatch]);
+
+  // Re-validate on every user/auto graph change
+  useEffect(() => {
+    if (autoGraph.nodes.length > 0) {
+      const result = validateDFA(userGraph, autoGraph);
+      dfaDispatch({ type: 'SET_VALIDATION', payload: result });
+    }
+  }, [userGraph, autoGraph, dfaDispatch]);
+
+  // Canvas callbacks
+  const handleAddNode = useCallback((x, y, label) => {
+    dfaDispatch({
+      type: 'ADD_NODE',
+      payload: { id: 'n' + Date.now(), label, x, y, isStart: false, isAccept: false },
+    });
+  }, [dfaDispatch]);
+
+  const handleMoveNode = useCallback((id, x, y) => {
+    dfaDispatch({ type: 'UPDATE_NODE', payload: { id, x, y } });
+  }, [dfaDispatch]);
+
+  const handleDeleteNode = useCallback((id) => {
+    dfaDispatch({ type: 'DELETE_NODE', payload: id });
+    dfaDispatch({ type: 'SET_SELECTED_NODE', payload: null });
+  }, [dfaDispatch]);
+
+  const handleRenameNode = useCallback((id, label) => {
+    dfaDispatch({ type: 'UPDATE_NODE', payload: { id, label } });
+  }, [dfaDispatch]);
+
+  const handleUpdateNode = useCallback((id, changes) => {
+    dfaDispatch({ type: 'UPDATE_NODE', payload: { id, ...changes } });
+  }, [dfaDispatch]);
+
+  const handleAddEdge = useCallback((fromId, toId, label) => {
+    dfaDispatch({
+      type: 'ADD_EDGE',
+      payload: { id: 'e' + Date.now(), from: fromId, to: toId, label },
+    });
+  }, [dfaDispatch]);
+
+  const handleUpdateEdge = useCallback((edgeId, label) => {
+    dfaDispatch({ type: 'UPDATE_EDGE', payload: { id: edgeId, label } });
+  }, [dfaDispatch]);
+
+  const handleDeleteEdge = useCallback((id) => {
+    dfaDispatch({ type: 'DELETE_EDGE', payload: id });
+    dfaDispatch({ type: 'SET_SELECTED_EDGE', payload: null });
+  }, [dfaDispatch]);
+
+  const handleSelectNode = useCallback((id) => {
+    dfaDispatch({ type: 'SET_SELECTED_NODE', payload: id });
+  }, [dfaDispatch]);
+
+  const handleSelectEdge = useCallback((id) => {
+    dfaDispatch({ type: 'SET_SELECTED_EDGE', payload: id });
+  }, [dfaDispatch]);
+
+  // Ctrl+Z / Ctrl+Y
+  useEffect(() => {
+    const handler = (e) => {
+      if (e.target.tagName === 'INPUT') return;
+      if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
+        e.preventDefault();
+        dfaDispatch({ type: 'UNDO' });
+      }
+      if ((e.ctrlKey || e.metaKey) && e.key === 'y') {
+        e.preventDefault();
+        dfaDispatch({ type: 'REDO' });
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [dfaDispatch]);
 
   const sourceLines = SOURCE.split('\n');
 
@@ -138,14 +175,33 @@ export default function LexerStage({ step, speed, playing, onStepComplete }) {
           )}
         </div>
 
-        {/* DFA panel */}
-        <div className={styles.panel}>
-          <div className={styles.panelTitle}>DFA — Deterministic Finite Automaton</div>
-          <div className={styles.dfaWrap}>
-            <DfaDiagram activeState={activeState} />
+        {/* DFA Editor panel */}
+        <div className={styles.panel} style={{ flex: 2 }}>
+          <DFAToolbar />
+          <div className={styles.dfaEditorArea}>
+            <DFACanvas
+              mode={mode}
+              nodes={displayNodes}
+              edges={displayEdges}
+              validation={validation}
+              selectedNode={dfaState.selectedNode}
+              selectedEdge={dfaState.selectedEdge}
+              onAddNode={handleAddNode}
+              onMoveNode={handleMoveNode}
+              onDeleteNode={handleDeleteNode}
+              onRenameNode={handleRenameNode}
+              onUpdateNode={handleUpdateNode}
+              onAddEdge={handleAddEdge}
+              onUpdateEdge={handleUpdateEdge}
+              onDeleteEdge={handleDeleteEdge}
+              onSelectNode={handleSelectNode}
+              onSelectEdge={handleSelectEdge}
+            />
+            <DFAFeedbackPanel />
           </div>
           <div className={styles.dfaNote}>
             Active state: <strong style={{ color: 'var(--accent)', fontFamily: 'var(--font-code)' }}>{activeState}</strong>
+            {mode === 'user' && <span className={styles.hint}> · Double-click canvas to add states · Shift+drag to draw edges</span>}
           </div>
         </div>
       </div>
@@ -172,5 +228,14 @@ export default function LexerStage({ step, speed, playing, onStepComplete }) {
         </div>
       </div>
     </div>
+  );
+}
+
+/* ── Wrapper with DFAProvider ──────────────────────────────────────── */
+export default function LexerStage(props) {
+  return (
+    <DFAProvider>
+      <LexerStageInner {...props} />
+    </DFAProvider>
   );
 }

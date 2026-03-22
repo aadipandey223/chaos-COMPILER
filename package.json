@@ -11,6 +11,8 @@
     "build-compiler": "gcc -O2 compiler/main.c compiler/lexer.c compiler/parser.c compiler/ast.c compiler/chaos.c -o compiler/chaos-compiler -lm"
   },
   "devDependencies": {
-    "concurrently": "^8.2.2"
+    "concurrently": "^8.2.2",
+    "fs-extra": "^11.3.4",
+    "prettier": "^3.8.1"
   }
 }

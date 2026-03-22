@@ -1,5 +1,6 @@
 import React from 'react';
 import { NavLink, Link } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import { useCompiler } from '../../store/useCompilerStore';
 import Divider from '../ui/Divider';
 import styles from './Sidebar.module.css';
@@ -19,9 +20,31 @@ export default function Sidebar() {
     dispatch({ type: 'SET_OPTIONS', payload: { [name]: value } });
   };
 
+  const containerVariants = {
+    hidden: {},
+    visible: {
+      transition: {
+        staggerChildren: 0.04
+      }
+    }
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, x: -16 },
+    visible: {
+      opacity: 1, x: 0,
+      transition: { duration: 0.3, ease: [0.16, 1, 0.3, 1] }
+    }
+  };
+
   return (
     <aside className={styles.sidebar}>
-      <nav className={styles.nav}>
+      <motion.nav
+        className={styles.nav}
+        variants={containerVariants}
+        initial="hidden"
+        animate="visible"
+      >
         {NAV_ITEMS.map(({ to, label, icon }) => (
           <NavLink
             key={to}
@@ -30,17 +53,29 @@ export default function Sidebar() {
               `${styles.link} ${isActive ? styles.active : ''}`
             }
           >
-            <span className={styles.icon}>{icon}</span>
-            {label}
+            {({ isActive }) => (
+              <motion.div className={styles.linkInner} variants={itemVariants}>
+                {isActive && (
+                  <motion.div
+                    layoutId="active-pill"
+                    className={styles.activePill}
+                    transition={{ type: 'spring', stiffness: 400, damping: 35 }}
+                  />
+                )}
+                <span className={styles.accentBar} />
+                <span className={styles.icon}>{icon}</span>
+                <span className={styles.labelText}>{label}</span>
+              </motion.div>
+            )}
           </NavLink>
         ))}
-      </nav>
+      </motion.nav>
 
       <Divider />
 
       <Link to="/learn" className={styles.learnLink}>
         <span className={styles.icon}>◈</span>
-        Learn
+        <span className={styles.labelText}>Learn</span>
       </Link>
 
       <Divider />

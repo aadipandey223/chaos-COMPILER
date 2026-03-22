@@ -1,0 +1,122 @@
+.section {
+  background: #0a0a09;
+  min-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: var(--space-9) var(--space-7);
+  border-top: 0.5px solid #1a1917;
+  position: relative;
+}
+
+.inner {
+  text-align: center;
+  max-width: 640px;
+}
+
+.heading {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: clamp(36px, 6vw, 56px);
+  line-height: 1.1;
+  margin-bottom: var(--space-5);
+  letter-spacing: -0.03em;
+}
+
+.gradientText {
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  will-change: background-image;
+}
+
+.desc {
+  font-family: var(--font-body);
+  font-size: 18px;
+  line-height: 1.65;
+  color: #9c9890;
+  margin-bottom: var(--space-7);
+}
+
+.buttons {
+  display: flex;
+  gap: var(--space-4);
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.ctaPrimary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 16px 36px;
+  background: #e05c3a;
+  color: #fff;
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 16px;
+  border-radius: var(--radius-md);
+  transition: transform 0.2s ease, filter 0.2s ease;
+  will-change: transform;
+}
+
+.ctaPrimary:hover {
+  transform: scale(1.03);
+  filter: brightness(1.1);
+}
+
+.ctaSecondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 16px 36px;
+  background: transparent;
+  color: #e8e4dd;
+  font-family: var(--font-body);
+  font-weight: 500;
+  font-size: 16px;
+  border: 1px solid #2a2825;
+  border-radius: var(--radius-md);
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.ctaSecondary:hover {
+  background: rgba(232, 228, 221, 0.06);
+  border-color: #3a3835;
+}
+
+/* Footer */
+.footer {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: var(--space-5) var(--space-7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-body);
+  font-size: 13px;
+  color: #4a4845;
+  border-top: 0.5px solid #1a1917;
+}
+
+.sep {
+  opacity: 0.4;
+}
+
+@media (max-width: 640px) {
+  .buttons {
+    flex-direction: column;
+    align-items: center;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gradientText {
+    -webkit-text-fill-color: #e8e4dd;
+    background: none !important;
+  }
+}

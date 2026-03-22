@@ -42,3 +42,16 @@ export function adaptAst(rawAst) {
   if (!rawAst) return null;
   return adaptNode(rawAst, 'root');
 }
+
+export function buildReplaySteps(root) {
+  const steps = [];
+  root.each(node => {
+    /* Step 1: the node itself */
+    steps.push({ kind: 'node', node });
+    /* Step 2: the edge to this node's parent */
+    if (node.parent) {
+      steps.push({ kind: 'edge', node });
+    }
+  });
+  return steps;
+}

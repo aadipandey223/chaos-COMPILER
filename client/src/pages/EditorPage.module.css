@@ -16,6 +16,15 @@
   font-size: 13px;
 }
 
+.progressLine {
+  position: absolute;
+  top: 0; left: 0;
+  height: 2px;
+  width: 0;
+  background: transparent;
+  z-index: 10;
+}
+
 /* Settings panel */
 .panel {
   width: 260px;

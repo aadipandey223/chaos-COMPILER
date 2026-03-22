@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
-import { BrowserRouter, Routes, Route, useNavigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, useNavigate, useLocation } from 'react-router-dom';
+import { AnimatePresence, motion } from 'framer-motion';
 import { CompilerProvider, useCompiler } from './store/useCompilerStore';
 import { compileCode } from './api/compile';
 import { useTheme } from './hooks/useTheme';
@@ -8,6 +9,15 @@ import ErrorBoundary from './components/ui/ErrorBoundary';
 import AppShell from './components/layout/AppShell';
 import LandingPage from './pages/LandingPage';
 import LearnPage from './pages/LearnPage';
+
+const pageVariants = {
+  initial:  { opacity: 0, y: 12, filter: 'blur(3px)' },
+  animate:  { opacity: 1, y: 0,  filter: 'blur(0px)',
+    transition: { duration: 0.3,
+                  ease: [0.16, 1, 0.3, 1] }},
+  exit:     { opacity: 0, y: -8, filter: 'blur(3px)',
+    transition: { duration: 0.18 }},
+};
 
 function KeyboardShortcuts() {
   const { state, dispatch } = useCompiler();
@@ -46,14 +56,29 @@ function KeyboardShortcuts() {
 }
 
 function AppRoutes() {
+  const location = useLocation();
+  // Use the first path segment as the animation key so sub-routes don't re-trigger
+  const routeKey = '/' + (location.pathname.split('/')[1] || '');
+
   return (
     <>
       <KeyboardShortcuts />
-      <Routes>
-        <Route path="/" element={<LandingPage />} />
-        <Route path="/app/*" element={<AppShell />} />
-        <Route path="/learn/*" element={<LearnPage />} />
-      </Routes>
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={routeKey}
+          variants={pageVariants}
+          initial="initial"
+          animate="animate"
+          exit="exit"
+          style={{ height: '100%', width: '100%' }}
+        >
+          <Routes location={location}>
+            <Route path="/" element={<LandingPage />} />
+            <Route path="/app/*" element={<AppShell />} />
+            <Route path="/learn/*" element={<LearnPage />} />
+          </Routes>
+        </motion.div>
+      </AnimatePresence>
     </>
   );
 }

@@ -17,28 +17,60 @@
 }
 
 .link {
+  position: relative;
+  display: block;
+  text-decoration: none;
+  border-radius: var(--radius-md);
+}
+
+.linkInner {
+  position: relative;
   display: flex;
   align-items: center;
   gap: var(--space-2);
   padding: 8px var(--space-3);
-  border-radius: var(--radius-md);
   font-size: 13px;
   font-weight: 500;
   color: var(--text-secondary);
-  text-decoration: none;
-  transition: background 0.12s, color 0.12s;
-  border-left: 2px solid transparent;
+  border-radius: var(--radius-md);
+  transition: color 0.12s;
+  z-index: 1;
 }
 
-.link:hover {
-  background: var(--surface-2);
+.link:hover .linkInner {
   color: var(--text-primary);
 }
 
-.active {
-  background: var(--accent-light);
+.active .linkInner {
   color: var(--accent);
-  border-left-color: var(--accent);
+}
+
+.accentBar {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 0px;
+  height: 60%;
+  background: var(--accent);
+  transition: width 0.15s ease-out;
+  border-radius: 0 4px 4px 0;
+}
+
+.link:hover .accentBar {
+  width: 3px;
+}
+
+.activePill {
+  position: absolute;
+  inset: 0;
+  background: var(--surface-2); /* The user asked for "orange highlight background", but earlier styles used --accent-light or surface-2 */
+  border-radius: var(--radius-md);
+  z-index: -1;
+}
+
+.active .activePill {
+  background: var(--accent-light); /* Or maybe surface-2 in hover state? The user says orange highlight for active link */
 }
 
 .icon {
@@ -46,6 +78,19 @@
   width: 18px;
   text-align: center;
   flex-shrink: 0;
+  transition: transform 0.15s ease-out;
+}
+
+.labelText {
+  transition: transform 0.15s ease-out;
+}
+
+.link:hover .icon {
+  transform: rotate(3deg);
+}
+
+.link:hover .labelText {
+  transform: translateX(4px);
 }
 
 .learnLink {

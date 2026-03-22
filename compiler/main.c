@@ -51,6 +51,11 @@ int main(int argc, char** argv) {
     int count_flag        = -1;  /* -1 means use intensity */
     int safe_mode         = 0;
 
+    int  chain_depth  = 1;
+    int  target_mask  = 0;
+    char excluded_fns[512]   = {0};
+    char excluded_lines[256] = {0};
+
     /* Parse flags */
     for (int i = 2; i < argc; i++) {
         if (strcmp(argv[i], "--json") == 0) {
@@ -69,6 +74,17 @@ int main(int argc, char** argv) {
             count_flag = c;
         } else if (strcmp(argv[i], "--safe") == 0) {
             safe_mode = 1;
+        } else if (strcmp(argv[i], "--chain") == 0 && i+1 < argc) {
+            int c = atoi(argv[++i]);
+            if (c < 1) c = 1;
+            if (c > 5) c = 5;
+            chain_depth = c;
+        } else if (strcmp(argv[i], "--targets") == 0 && i+1 < argc) {
+            target_mask = atoi(argv[++i]);
+        } else if (strcmp(argv[i], "--exclude-fns") == 0 && i+1 < argc) {
+            strncpy(excluded_fns, argv[++i], sizeof(excluded_fns)-1);
+        } else if (strcmp(argv[i], "--exclude-lines") == 0 && i+1 < argc) {
+            strncpy(excluded_lines, argv[++i], sizeof(excluded_lines)-1);
         }
     }
 
@@ -90,6 +106,13 @@ int main(int argc, char** argv) {
         cfg.safe_mode = safe_mode;
         /* Use --count if provided, else use intensity */
         if (count_flag >= 0) cfg.count = count_flag;
+
+        cfg.chain_depth = chain_depth;
+        cfg.target_mask = target_mask;
+        strncpy(cfg.excluded_fns,   excluded_fns,
+                sizeof(cfg.excluded_fns)   - 1);
+        strncpy(cfg.excluded_lines, excluded_lines,
+                sizeof(cfg.excluded_lines) - 1);
 
         MutationLog log = chaos_run(ast, cfg);
 
