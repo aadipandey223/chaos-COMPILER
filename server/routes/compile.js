@@ -1,9 +1,10 @@
 const express = require('express');
 const multer  = require('multer');
 const fs      = require('fs').promises;
+const fsSync  = require('fs');
 const path    = require('path');
 const os      = require('os');
-const { runCompiler } = require('../utils/runner');
+const { runWithTreeSitter } = require('../utils/chaosRunner');
 
 const router = express.Router();
 
@@ -51,7 +52,12 @@ router.post('/compile', (req, res, next) => {
 
     let result;
     try {
-      result = await runCompiler(tempFilePath, {
+      const sourceCode = fsSync.readFileSync(tempFilePath, 'utf8');
+      const fileExt    = req.file
+          ? path.extname(req.file.originalname).toLowerCase()
+          : '.c';
+
+      result = await runWithTreeSitter(sourceCode, fileExt, {
         mutate:           req.body.mutate !== false,
         count:            req.body.count            || null,
         intensity:        req.body.intensity        || 'low',
@@ -74,7 +80,7 @@ router.post('/compile', (req, res, next) => {
       ok:        true,
       ast:       result.ast,
       mutations: result.mutations,
-      warnings:  result.stderr || null,
+      warnings:  result.warnings || null,
     });
 
   } catch (err) {

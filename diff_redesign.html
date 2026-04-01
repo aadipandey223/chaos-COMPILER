@@ -1,0 +1,259 @@
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font-mono,'JetBrains Mono',monospace)}
+
+#wrap{display:flex;flex-direction:column;gap:0;border:0.5px solid var(--color-border-secondary);border-radius:12px;overflow:hidden}
+
+#diff-header{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;border-bottom:0.5px solid var(--color-border-secondary);background:var(--color-background-secondary);gap:12px;flex-wrap:wrap}
+.dh-stat{font-size:12px;color:var(--color-text-secondary);display:flex;align-items:center;gap:6px}
+.badge{display:inline-flex;align-items:center;gap:4px;font-size:11px;padding:2px 8px;border-radius:5px;font-weight:500;font-family:var(--font-mono)}
+.badge-mut{background:rgba(212,82,42,.12);color:#c94c24;border:0.5px solid rgba(212,82,42,.3)}
+.badge-del{background:rgba(220,50,50,.1);color:#b83232;border:0.5px solid rgba(220,50,50,.25)}
+.badge-ins{background:rgba(30,150,90,.1);color:#1a8a5a;border:0.5px solid rgba(30,150,90,.25)}
+.badge-safe{background:rgba(100,100,220,.1);color:#3355bb;border:0.5px solid rgba(100,100,220,.2)}
+
+#diff-cols{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);border-bottom:0.5px solid var(--color-border-secondary)}
+.col-head{padding:7px 14px;font-size:11px;font-weight:500;letter-spacing:.04em;color:var(--color-text-secondary);border-bottom:0.5px solid var(--color-border-secondary);background:var(--color-background-secondary)}
+.col-head.right{border-left:0.5px solid var(--color-border-secondary)}
+
+#diff-body{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);max-height:380px;overflow-y:auto}
+.col-code{overflow:hidden}
+.col-code.right{border-left:0.5px solid var(--color-border-secondary)}
+
+.line{display:flex;align-items:stretch;min-height:24px;font-size:12.5px;line-height:1;cursor:default;transition:background .1s}
+.line:hover{filter:brightness(1.06)}
+.line.selected{outline:1px solid rgba(212,82,42,.5);outline-offset:-1px;z-index:2;position:relative}
+
+.ln{min-width:32px;padding:5px 8px 5px 6px;text-align:right;font-size:11px;color:var(--color-text-tertiary);user-select:none;border-right:0.5px solid var(--color-border-tertiary);flex-shrink:0}
+.lc{padding:5px 10px 5px 8px;flex:1;white-space:pre;overflow:hidden;color:var(--color-text-primary)}
+
+.line-normal{}
+.line-del{background:rgba(200,40,40,.08)}
+.line-del .ln,.line-del .lc{color:#b83232}
+.line-del .lc::before{content:'-  ';color:#c84040;font-weight:600}
+.line-ins{background:rgba(30,150,90,.08)}
+.line-ins .ln,.line-ins .lc{color:#1a8a5a}
+.line-ins .lc::before{content:'+  ';color:#22aa66;font-weight:600}
+.line-mut{background:rgba(212,82,42,.08)}
+.line-mut .lc{color:#c94c24}
+.line-mut .lc::before{content:'~  ';color:#d4522a;font-weight:600}
+.line-empty{background:rgba(100,100,100,.03)}
+.line-empty .lc{color:transparent}
+
+.mut-tag{display:inline-block;font-size:9.5px;padding:1px 5px;border-radius:3px;margin-left:8px;vertical-align:middle;font-weight:600;letter-spacing:.02em;background:rgba(212,82,42,.18);color:#c94c24;border:0.5px solid rgba(212,82,42,.3);cursor:pointer;font-family:var(--font-sans,sans-serif)}
+.mut-tag:hover{background:rgba(212,82,42,.28)}
+
+#explain-panel{padding:0;max-height:0;overflow:hidden;transition:max-height .3s,padding .3s}
+#explain-panel.open{padding:14px 16px;max-height:300px;border-top:0.5px solid var(--color-border-secondary)}
+
+.ep-title{font-size:13px;font-weight:500;color:var(--color-text-primary);margin-bottom:10px;display:flex;align-items:center;gap:8px;font-family:var(--font-sans,sans-serif)}
+.ep-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.ep-card{background:var(--color-background-secondary);border-radius:8px;padding:10px 12px;border:0.5px solid var(--color-border-tertiary)}
+.ep-card-label{font-size:10px;color:var(--color-text-tertiary);margin-bottom:4px;letter-spacing:.04em;font-family:var(--font-sans,sans-serif)}
+.ep-card-val{font-size:12px;color:var(--color-text-primary);font-family:var(--font-mono)}
+.ep-card-val.danger{color:#c94c24;font-weight:600}
+.ep-card-val.success{color:#1a8a5a}
+.ep-desc{grid-column:1/-1;font-size:12px;line-height:1.6;color:var(--color-text-secondary);font-family:var(--font-sans,sans-serif)}
+.ep-hint{grid-column:1/-1;font-size:11px;padding:8px 10px;background:rgba(212,82,42,.06);border-radius:6px;border-left:2px solid #d4522a;color:var(--color-text-secondary);font-family:var(--font-sans,sans-serif);line-height:1.5}
+
+#nav-bar{display:flex;align-items:center;gap:8px;padding:8px 14px;border-top:0.5px solid var(--color-border-secondary);background:var(--color-background-secondary)}
+#nav-bar button{font-size:11px;padding:4px 10px;border-radius:6px;border:0.5px solid var(--color-border-secondary);background:transparent;color:var(--color-text-secondary);cursor:pointer}
+#nav-bar button:hover{background:var(--color-background-primary);color:var(--color-text-primary)}
+#nav-info{font-size:11px;color:var(--color-text-tertiary);margin-left:auto;font-family:var(--font-sans,sans-serif)}
+</style>
+
+<div id="wrap">
+  <div id="diff-header">
+    <div class="dh-stat">
+      <span class="badge badge-mut">5 mutations</span>
+      <span class="badge badge-del">2 deleted</span>
+      <span class="badge badge-ins">4 inserted</span>
+    </div>
+    <div style="display:flex;gap:6px;align-items:center">
+      <span style="font-size:11px;color:var(--color-text-tertiary);font-family:var(--font-sans)">Click any mutation tag to explain it</span>
+      <button id="btn-nav-mut" onclick="jumpMut(1)" style="font-size:11px;padding:3px 10px;border-radius:6px;border:0.5px solid var(--color-border-secondary);background:transparent;color:var(--color-text-secondary);cursor:pointer">Next mutation</button>
+    </div>
+  </div>
+
+  <div id="diff-cols">
+    <div class="col-head">Original</div>
+    <div class="col-head right">Mutated</div>
+  </div>
+
+  <div id="diff-body">
+    <div class="col-code left" id="col-left"></div>
+    <div class="col-code right" id="col-right"></div>
+  </div>
+
+  <div id="explain-panel">
+    <div class="ep-title">
+      <span id="ep-badge" class="badge badge-mut"></span>
+      <span id="ep-title-text"></span>
+    </div>
+    <div class="ep-grid" id="ep-grid"></div>
+  </div>
+
+  <div id="nav-bar">
+    <button onclick="jumpMut(-1)">Prev</button>
+    <button onclick="jumpMut(1)">Next</button>
+    <span id="nav-info">mutation 0 / 5</span>
+    <button onclick="closePanel()" style="margin-left:8px">Close explanation</button>
+  </div>
+</div>
+
+<script>
+const MUTATIONS = [
+  {
+    id:'m1', type:'DEAD_CODE_INJECT', line_orig:1, line_mut:2,
+    score:3, safe:true,
+    before:'(nothing)', after:'if(0){}',
+    desc:'Injected unreachable dead code block. This never executes, but can confuse coverage tools into thinking a branch exists.',
+    hint:'Test lesson: your test suite should still pass — but code coverage % may drop, exposing gaps in branch coverage.',
+    impact:'low'
+  },
+  {
+    id:'m2', type:'VARIABLE_SWAP', line_orig:2, line_mut:3,
+    score:6, safe:true,
+    before:'return a + b', after:'return b + a',
+    desc:'Swapped operand order in addition. For integers this is equivalent, but reveals if your tests depend on operand ordering or side effects.',
+    hint:'Test lesson: if tests pass after this, they are not checking operand-order-sensitive behavior.',
+    impact:'medium'
+  },
+  {
+    id:'m3', type:'STATEMENT_DELETION', line_orig:6, line_mut:null,
+    score:9, safe:false,
+    before:'int x = 10;', after:'(deleted)',
+    desc:'Entire variable declaration removed. This is a high-impact mutation — any code referencing x will now fail to compile or behave incorrectly.',
+    hint:'Test lesson: if tests still pass after this deletion, x is unused or your tests have no assertion covering its value.',
+    impact:'high'
+  },
+  {
+    id:'m4', type:'DEAD_CODE_INJECT', line_orig:8, line_mut:9,
+    score:3, safe:true,
+    before:'(nothing)', after:'if(0){}',
+    desc:'Second dead code injection, this time inside main() before the if block.',
+    hint:'Test lesson: dead code injections at score 3 are the lowest impact mutations — easy kills for any decent test suite.',
+    impact:'low'
+  },
+  {
+    id:'m5', type:'OPERATOR_MUTATION', line_orig:9, line_mut:11,
+    score:10, safe:true,
+    before:'x = x + 1', after:'x = x - 1',
+    desc:'Changed + to - in the assignment. This is a maximum-impact mutation — the loop body now decrements instead of increments, likely causing an infinite loop or wrong result.',
+    hint:'Test lesson: this is the most dangerous mutation type. If your tests survive this, they are almost certainly not asserting on x\'s final value.',
+    impact:'high'
+  }
+];
+
+const LEFT_LINES = [
+  {n:1,  t:'normal', c:'int add(int a, int b) {',   mid:null},
+  {n:2,  t:'del',    c:'  return a + b;',             mid:'m2'},
+  {n:3,  t:'normal', c:'}',                           mid:null},
+  {n:4,  t:'normal', c:'',                            mid:null},
+  {n:5,  t:'normal', c:'int main() {',                mid:null},
+  {n:6,  t:'del',    c:'  int x = 10;',               mid:'m3'},
+  {n:7,  t:'normal', c:'  int y = 20;',               mid:null},
+  {n:8,  t:'normal', c:'  if (x < y) {',              mid:'m4'},
+  {n:9,  t:'del',    c:'    x = x + 1;',              mid:'m5'},
+  {n:10, t:'normal', c:'  }',                         mid:null},
+  {n:11, t:'normal', c:'  return add(x, y);',         mid:null},
+  {n:12, t:'normal', c:'}',                           mid:null},
+];
+
+const RIGHT_LINES = [
+  {n:1,  t:'normal', c:'int add(int a, int b) {',    mid:null},
+  {n:2,  t:'ins',    c:'  if(0){}',                  mid:'m1'},
+  {n:3,  t:'mut',    c:'  return b + a;',             mid:'m2'},
+  {n:4,  t:'normal', c:'}',                           mid:null},
+  {n:5,  t:'normal', c:'',                            mid:null},
+  {n:6,  t:'normal', c:'int main() {',                mid:null},
+  {n:7,  t:'normal', c:'  int y = 20;',               mid:null},
+  {n:8,  t:'empty',  c:'',                            mid:null},
+  {n:9,  t:'ins',    c:'  if(0){}',                  mid:'m4'},
+  {n:10, t:'normal', c:'  if (x < y) {',              mid:null},
+  {n:11, t:'mut',    c:'    x = x - 1;',              mid:'m5'},
+  {n:12, t:'normal', c:'  }',                         mid:null},
+  {n:13, t:'normal', c:'  return add(x, y);',         mid:null},
+  {n:14, t:'normal', c:'}',                           mid:null},
+];
+
+const IMPACT_COLOR = {low:'badge-safe', medium:'badge-mut', high:'badge-del'};
+let activeMut = null;
+let mutIdx = -1;
+const MUT_IDS = MUTATIONS.map(m=>m.id);
+
+function esc(s){return s.replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+
+function buildCol(lines, side) {
+  return lines.map((l,i)=>{
+    const cls = `line line-${l.t}`;
+    const tag = l.mid ? `<span class="mut-tag" onclick="showMut('${l.mid}')">${MUTATIONS.find(m=>m.id===l.mid).type}</span>` : '';
+    return `<div class="${cls}" id="${side}-${i}" data-mid="${l.mid||''}">
+      <span class="ln">${l.n}</span>
+      <span class="lc">${esc(l.c)}${tag}</span>
+    </div>`;
+  }).join('');
+}
+
+document.getElementById('col-left').innerHTML = buildCol(LEFT_LINES,'L');
+document.getElementById('col-right').innerHTML = buildCol(RIGHT_LINES,'R');
+
+function highlightLines(mid) {
+  document.querySelectorAll('.line').forEach(el=>{
+    el.classList.toggle('selected', el.dataset.mid===mid && mid);
+  });
+}
+
+function showMut(id) {
+  const m = MUTATIONS.find(x=>x.id===id);
+  if (!m) return;
+  activeMut = id;
+  mutIdx = MUT_IDS.indexOf(id);
+  highlightLines(id);
+  document.getElementById('nav-info').textContent = `mutation ${mutIdx+1} / ${MUTATIONS.length}`;
+
+  const impactCls = IMPACT_COLOR[m.impact]||'badge-mut';
+  document.getElementById('ep-badge').className = `badge ${impactCls}`;
+  document.getElementById('ep-badge').textContent = m.type;
+  document.getElementById('ep-title-text').textContent = `line ${m.line_orig} → ${m.line_mut||'deleted'}`;
+
+  document.getElementById('ep-grid').innerHTML = `
+    <div class="ep-card">
+      <div class="ep-card-label">Before</div>
+      <div class="ep-card-val">${esc(m.before)}</div>
+    </div>
+    <div class="ep-card">
+      <div class="ep-card-label">After</div>
+      <div class="ep-card-val danger">${esc(m.after)}</div>
+    </div>
+    <div class="ep-card">
+      <div class="ep-card-label">Impact score</div>
+      <div class="ep-card-val ${m.score>=8?'danger':m.score>=5?'':'success'}">${m.score} / 10</div>
+    </div>
+    <div class="ep-card">
+      <div class="ep-card-label">Safe mode</div>
+      <div class="ep-card-val ${m.safe?'success':'danger'}">${m.safe?'allowed':'blocked'}</div>
+    </div>
+    <div class="ep-desc">${m.desc}</div>
+    <div class="ep-hint">${m.hint}</div>
+  `;
+  document.getElementById('explain-panel').classList.add('open');
+
+  const firstMutLine = document.getElementById(`L-${LEFT_LINES.findIndex(l=>l.mid===id)}`);
+  if (firstMutLine) firstMutLine.scrollIntoView({behavior:'smooth',block:'center'});
+}
+
+function jumpMut(dir) {
+  mutIdx = (mutIdx + dir + MUTATIONS.length) % MUTATIONS.length;
+  showMut(MUTATIONS[mutIdx].id);
+}
+
+function closePanel() {
+  document.getElementById('explain-panel').classList.remove('open');
+  highlightLines(null);
+  activeMut = null;
+}
+
+showMut('m3');
+</script>

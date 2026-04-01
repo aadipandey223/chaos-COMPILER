@@ -69,18 +69,23 @@ const DFACanvas = ({
     });
   };
 
+  const commitInlineInput = () => {
+    if (!inlineInput) return;
+    if (inlineInput.type === 'addNode' && inlineInput.value.trim()) {
+      onAddNode(inlineInput.x, inlineInput.y, inlineInput.value);
+    } else if (inlineInput.type === 'renameNode' && inlineInput.value.trim()) {
+      onRenameNode(inlineInput.nodeId, inlineInput.value);
+    } else if (inlineInput.type === 'addEdge' && inlineInput.value.trim()) {
+      onAddEdge(inlineInput.fromId, inlineInput.toId, inlineInput.value);
+    } else if (inlineInput.type === 'editEdge' && inlineInput.value.trim()) {
+      onUpdateEdge(inlineInput.edgeId, inlineInput.value);
+    }
+    setInlineInput(null);
+  };
+
   const handleInputKeyDown = (e) => {
     if (e.key === 'Enter') {
-      if (inlineInput.type === 'addNode') {
-        onAddNode(inlineInput.x, inlineInput.y, inlineInput.value);
-      } else if (inlineInput.type === 'renameNode') {
-        onRenameNode(inlineInput.nodeId, inlineInput.value);
-      } else if (inlineInput.type === 'addEdge') {
-        onAddEdge(inlineInput.fromId, inlineInput.toId, inlineInput.value);
-      } else if (inlineInput.type === 'editEdge') {
-        onUpdateEdge(inlineInput.edgeId, inlineInput.value);
-      }
-      setInlineInput(null);
+      commitInlineInput();
     } else if (e.key === 'Escape') {
       setInlineInput(null);
     }
@@ -418,7 +423,7 @@ const DFACanvas = ({
                   value={inlineInput.value}
                   onChange={e => setInlineInput({...inlineInput, value: e.target.value})}
                   onKeyDown={handleInputKeyDown}
-                  onBlur={() => setInlineInput(null)}
+                  onBlur={commitInlineInput}
                 />
               </foreignObject>
             </g>

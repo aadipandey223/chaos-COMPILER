@@ -2,6 +2,7 @@
 #include "parser.h"
 #include "ast.h"
 #include "chaos.h"
+#include "ast_from_json.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -35,7 +36,7 @@ char* read_file(const char* path) {
 int main(int argc, char** argv) {
     if (argc < 2) {
         fprintf(stderr,
-            "Usage: %s <file> [--json] [--mutate] "
+            "Usage: %s <file> [--ast-file <file>] [--json] [--mutate] "
             "[--intensity low|medium|high] [--seed <n>] "
             "[--count <n>] [--safe]\n",
             argv[0]);
@@ -43,6 +44,7 @@ int main(int argc, char** argv) {
     }
 
     const char* path      = argv[1];
+    const char* ast_file_path = NULL;
     int  use_json         = 0;
     int  use_mutate       = 0;
     const char* intensity = "low";
@@ -58,7 +60,9 @@ int main(int argc, char** argv) {
 
     /* Parse flags */
     for (int i = 2; i < argc; i++) {
-        if (strcmp(argv[i], "--json") == 0) {
+        if (strcmp(argv[i], "--ast-file") == 0 && i + 1 < argc) {
+            ast_file_path = argv[++i];
+        } else if (strcmp(argv[i], "--json") == 0) {
             use_json = 1;
         } else if (strcmp(argv[i], "--mutate") == 0) {
             use_mutate = 1;
@@ -93,11 +97,21 @@ int main(int argc, char** argv) {
     if (strcmp(intensity, "medium") == 0) mut_count = 3;
     else if (strcmp(intensity, "high") == 0) mut_count = 6;
 
-    char* source = read_file(path);
-    lexer_init(source);
-    parser_init();
+    char* source = NULL;
+    Node* ast = NULL;
 
-    Node* ast = parse_program();
+    if (ast_file_path) {
+        ast = ast_from_json_file(ast_file_path);
+        if (!ast) {
+            fprintf(stderr, "Failed to read AST from %s\n", ast_file_path);
+            return 1;
+        }
+    } else {
+        source = read_file(path);
+        lexer_init(source);
+        parser_init();
+        ast = parse_program();
+    }
 
     if (use_mutate) {
         ChaosConfig cfg;

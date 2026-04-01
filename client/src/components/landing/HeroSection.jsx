@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import styles from './HeroSection.module.css';
+import ParticleBackground from './ParticleBackground';
 
 /* ── Token ticker data ─────────────────────────────────────────────── */
 const TICKER_TOKENS = [
@@ -40,38 +41,33 @@ const TOKEN_COLORS = {
   SEMI: '#6b6760',
 };
 
-/* ── Particles (CSS-only) ──────────────────────────────────────────── */
-function Particles() {
-  return (
-    <div className={styles.particles} aria-hidden>
-      {Array.from({ length: 40 }).map((_, i) => (
-        <span
-          key={i}
-          className={styles.particle}
-          style={{
-            left: `${Math.random() * 100}%`,
-            animationDuration: `${6 + Math.random() * 12}s`,
-            animationDelay: `${Math.random() * 8}s`,
-            width: `${1 + Math.random() * 2}px`,
-            height: `${1 + Math.random() * 2}px`,
-            opacity: 0.15 + Math.random() * 0.25,
-          }}
-        />
-      ))}
-    </div>
-  );
-}
-
-/* ── Component ─────────────────────────────────────────────────────── */
+/* â”€â”€ Component â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 export default function HeroSection() {
   const line1 = ['Break', 'your', 'code.'];
   const line2 = ['On', 'purpose.'];
 
+  const [activeShape, setActiveShape] = useState('scatter');
+
+  const handleMouseMove = (e) => {
+    const cx = window.innerWidth / 2;
+    const cy = window.innerHeight / 2;
+    
+    // Calculate distance to center
+    const dist = Math.hypot(e.clientX - cx, e.clientY - cy);
+    
+    // Change shape to code if close to center
+    if (dist < 350) {
+      setActiveShape('code');
+    } else {
+      setActiveShape('scatter');
+    }
+  };
+
   return (
-    <section className={styles.hero}>
+    <section className={styles.hero} onMouseMove={handleMouseMove}>
       {/* Noise overlay */}
       <div className={styles.noise} aria-hidden />
-      <Particles />
+      <ParticleBackground activeShape={activeShape} />
 
       <div className={styles.content}>
         {/* Heading line 1 */}
@@ -157,3 +153,4 @@ export default function HeroSection() {
     </section>
   );
 }
+

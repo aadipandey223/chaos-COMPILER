@@ -201,7 +201,7 @@ function LexerStageInner({ step, speed, playing, onStepComplete }) {
           </div>
           <div className={styles.dfaNote}>
             Active state: <strong style={{ color: 'var(--accent)', fontFamily: 'var(--font-code)' }}>{activeState}</strong>
-            {mode === 'user' && <span className={styles.hint}> · Double-click canvas to add states · Shift+drag to draw edges</span>}
+            {mode === 'user' && <span className={styles.hint}> · Double-click canvas to add states (use name above) · Shift+drag to draw edges</span>}
           </div>
         </div>
       </div>

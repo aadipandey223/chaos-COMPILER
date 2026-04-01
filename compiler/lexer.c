@@ -108,6 +108,14 @@ static TokenType keyword_type(const char* word) {
     if (strcmp(word, "float")    == 0) return TOK_FLOAT;
     if (strcmp(word, "double")   == 0) return TOK_DOUBLE;
     if (strcmp(word, "void")     == 0) return TOK_VOID;
+    if (strcmp(word, "long")     == 0) return TOK_LONG;
+    if (strcmp(word, "short")    == 0) return TOK_SHORT;
+    if (strcmp(word, "unsigned") == 0) return TOK_UNSIGNED;
+    if (strcmp(word, "signed")   == 0) return TOK_SIGNED;
+    if (strcmp(word, "size_t")   == 0) return TOK_SIZE_T;
+    if (strcmp(word, "bool")     == 0) return TOK_BOOL;
+    if (strcmp(word, "true")     == 0) return TOK_TRUE;
+    if (strcmp(word, "false")    == 0) return TOK_FALSE;
     if (strcmp(word, "return")   == 0) return TOK_RETURN;
     if (strcmp(word, "if")       == 0) return TOK_IF;
     if (strcmp(word, "else")     == 0) return TOK_ELSE;
@@ -204,7 +212,7 @@ Token next_token(void) {
 
         if (peek() == '"') {
             advance(); length++;       /* closing " */
-            return make_token(TOK_STRING, start, length,
+            return make_token(TOK_STRING_LITERAL, start, length,
                               tok_line, tok_col);
         }
 
@@ -323,7 +331,14 @@ Token next_token(void) {
         case '.':  return make_token(TOK_DOT,       start, 1, tok_line, tok_col);
         case ':':  return make_token(TOK_COLON,     start, 1, tok_line, tok_col);
         case '?':  return make_token(TOK_QUESTION,  start, 1, tok_line, tok_col);
-        case '#':  return make_token(TOK_HASH,      start, 1, tok_line, tok_col);
+        case '#':  {
+            int length = 1;
+            while (peek() != '\n' && peek() != '\0') {
+                advance();
+                length++;
+            }
+            return make_token(TOK_PREPROCESSOR, start, length, tok_line, tok_col);
+        }
 
         default:
             break;

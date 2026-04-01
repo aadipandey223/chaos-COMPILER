@@ -1,54 +1,57 @@
-import React, { useRef, useEffect, useCallback, useState } from 'react';
-import { select, hierarchy, tree, linkVertical, zoom, zoomIdentity, drag } from 'd3';
+import React, { useRef, useEffect, useCallback, useState, useMemo } from 'react';
+import { select, hierarchy, tree, zoom, zoomIdentity, drag } from 'd3';
 import { motion, AnimatePresence } from 'framer-motion';
 import styles from './AstTree.module.css';
 import { buildReplaySteps } from '../../utils/astAdapter';
+
+const TYPE_COLOR = {
+  program: { fill:'#1e2d4a', stroke:'#4b6b9e', text:'#a8c0e8' },
+  stmt:    { fill:'#1a2e26', stroke:'#3a7a5e', text:'#8acfb0' },
+  expr:    { fill:'#261d3a', stroke:'#7a5e9a', text:'#c0a8e8' },
+  literal: { fill:'#2e2214', stroke:'#8a6a3a', text:'#d4b07a' },
+};
+const MUT_COLOR = { fill:'#3a1508', stroke:'#d4522a', text:'#f0845a' };
+
+function getNodeCategory(type) {
+  if (!type) return 'stmt';
+  if (type.includes('Program') || type.includes('TranslationUnit')) return 'program';
+  if (['Block', 'FuncDecl', 'VarDecl', 'Return', 'If', 'While'].includes(type) || type.includes('Stmt') || type.includes('Decl')) return 'stmt';
+  if (type.includes('Op') || type.includes('Expr') || type.includes('Call')) return 'expr';
+  if (type.includes('Literal') || type.includes('Number') || type.includes('Ident')) return 'literal';
+  return 'stmt';
+}
 
 function truncate(str, max) {
   if (!str) return '';
   return str.length > max ? str.slice(0, max - 3) + '...' : str;
 }
 
-function nodeColor(type) {
-  const map = {
-    Program:       { fill: '#1a1a1a', stroke: '#3a3a3a' },
-    Block:         { fill: '#1a1a1a', stroke: '#3a3a3a' },
-    FuncDecl:      { fill: '#1a2a1a', stroke: '#3a9e6e' },
-    VarDecl:       { fill: '#1a1a2a', stroke: '#3a6a9e' },
-    Return:        { fill: '#2a1a1a', stroke: '#9e3a3a' },
-    If:            { fill: '#2a2a1a', stroke: '#9e8a3a' },
-    While:         { fill: '#2a2a1a', stroke: '#9e8a3a' },
-    BinaryOp:      { fill: '#2a1a2a', stroke: '#7a3a9e' },
-    UnaryOp:       { fill: '#2a1a2a', stroke: '#7a3a9e' },
-    Number:        { fill: '#1a2a2a', stroke: '#3a8a8a' },
-    StringLiteral: { fill: '#1a2a2a', stroke: '#3a8a8a' },
-    Ident:         { fill: '#1a2a2a', stroke: '#3a8a8a' },
-    Call:          { fill: '#2a1a1a', stroke: '#e05c3a' },
-  };
-  return map[type] || { fill: '#1a1a1a', stroke: '#444444' };
-}
-
-const NODE_W = 120;
-const NODE_H = 70;
+const W = 116;
+const H = 50;
+const H_SEP = 140;
+const V_SEP = 90;
 const STEP_DURATION = { 0.5: 800, 1: 400, 2: 200 };
 
 const AstTree = ({ data, onNodeClick, search = '', mutatedLines = new Set() }) => {
-  const svgRef       = useRef(null);
-  const zoomRef      = useRef(null);
-  const onClickRef   = useRef(onNodeClick);
+  const svgRef = useRef(null);
+  const zoomRef = useRef(null);
+  const containerRef = useRef(null);
 
-  const [replayMode, setReplayMode]   = useState(false);
-  const [isPlaying, setIsPlaying]     = useState(false);
+  const [activeFilter, setActiveFilter] = useState('all'); // 'all' or 'mutated'
+  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [selectedNode, setSelectedNode] = useState(null);
+
+  // Replay State
+  const [replayMode, setReplayMode] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
-  const [totalSteps, setTotalSteps]   = useState(0);
-  const [speed, setSpeed]             = useState(1);
+  const [totalSteps, setTotalSteps] = useState(0);
+  const [speed, setSpeed] = useState(1);
 
-  const stepsRef        = useRef([]);
-  const timerRef        = useRef(null);
+  const stepsRef = useRef([]);
+  const timerRef = useRef(null);
   const visibleNodesRef = useRef(new Set());
   const visibleEdgesRef = useRef(new Set());
-
-  useEffect(() => { onClickRef.current = onNodeClick; }, [onNodeClick]);
 
   useEffect(() => {
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
@@ -59,371 +62,263 @@ const AstTree = ({ data, onNodeClick, search = '', mutatedLines = new Set() }) =
     setIsPlaying(false);
   }, []);
 
-  const renderTree = useCallback(() => {
+  const renderTreeCore = useCallback((isReplayRender = false, limitNodes = null, limitEdges = null, cStep = 0) => {
     if (!data || !svgRef.current) return;
-    if (replayMode) return;
 
-    const q = search.trim().toLowerCase();
     const svg = select(svgRef.current);
-    svg.selectAll('*').remove();
+    
+    let bgRect = svg.select('.bg-event-catcher');
+    if (bgRect.empty()) {
+      bgRect = svg.append('rect')
+        .attr('class', 'bg-event-catcher')
+        .attr('width', '100%')
+        .attr('height', '100%')
+        .attr('fill', 'transparent')
+        .style('pointer-events', 'all')
+        .on('click', () => setSelectedNode(null));
+    }
 
-    const container = svgRef.current.parentElement;
-    const W = container.clientWidth;
-    // No longer using fixed H = 600 or margins M.
-
-    const g = svg.append('g');
+    let g = svg.select('.tree-container');
+    if (g.empty()) {
+      g = svg.append('g').attr('class', 'tree-container');
+    } else {
+      g.selectAll('*').remove();
+    }
 
     if (!zoomRef.current) {
       zoomRef.current = zoom()
-        .scaleExtent([0.3, 3])
-        .on('zoom', (e) => { g.attr('transform', e.transform); });
+        .scaleExtent([0.1, 5])
+        .on('zoom', (e) => { 
+          svg.select('.tree-container').attr('transform', e.transform); 
+        });
+      svg.call(zoomRef.current);
     }
-    svg.call(zoomRef.current);
 
-    const rootNode   = hierarchy(data);
-    const treeLayout = tree().nodeSize([NODE_W, NODE_H]);
+    const rootNode = hierarchy(data, d => {
+        if (isCollapsed && !isReplayRender) {
+            const type = d.meta?.type || d.name || '';
+            // Properly collapse large subtrees like blocks or condition branches
+            if ((type.includes('Block') || type.includes('If') || type.includes('While') || type.includes('Function')) && type !== 'Program' && type !== 'TranslationUnit') {
+                return null;
+            }
+        }
+        return d.children || d._children;
+    });
+
+    const treeLayout = tree().nodeSize([H_SEP, V_SEP]);
     treeLayout(rootNode);
 
-    let x0 = Infinity, x1 = -Infinity;
+    let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
     rootNode.each(d => {
       if (d.x > x1) x1 = d.x;
       if (d.x < x0) x0 = d.x;
+      if (d.y > y1) y1 = d.y;
+      if (d.y < y0) y0 = d.y;
     });
 
-    const treeHeight = rootNode.height * NODE_H + 80;
-    const svgHeight  = Math.max(600, treeHeight);
-
-    const treeWidth = x1 - x0 + NODE_W;
-    const svgWidth = Math.max(W, treeWidth + 40);
+    const cx = (x0 + x1) / 2;
+    // Safe width retrieval
+    let viewW = containerRef.current ? containerRef.current.clientWidth : 800;
     
-    svg.attr('height', svgHeight);
-    svg.attr('width', svgWidth);
-
-    const startX = treeWidth < W ? (W - treeWidth) / 2 : 20;
-    const translateStr = `translate(${startX - x0 + NODE_W/2}, 40)`;
+    // Ensure initial framing centers the root correctly
+    const initialTranslate = zoomIdentity.translate(viewW/2 - cx, 40);
     
-    // Set initial transform both on g and in zoom identity
-    g.attr('transform', translateStr);
-    select(svgRef.current).call(zoomRef.current.transform, zoomIdentity.translate(startX - x0 + NODE_W/2, 40));
+    // ONLY set this initially, otherwise if it's purely a filter change it will reset zoom
+    // We only reset zoom gracefully if it's the very first render or we explicitly call reset
+    if (!svg.node().__zoomInitialized) {
+      svg.call(zoomRef.current.transform, initialTranslate);
+      svg.node().__zoomInitialized = true;
+    }
 
     const positions = new Map();
+    const nodeMap = new Map();
     rootNode.descendants().forEach((d, i) => {
       d._id = i;
       positions.set(i, { x: d.x, y: d.y });
-    });
-
-    const links = rootNode.links();
-    const linkGen = linkVertical().x(n => n.x).y(n => n.y);
-
-    const depthCounts = {};
-    const linkSel = g.selectAll('.link')
-      .data(links)
-      .enter()
-      .append('path')
-      .attr('class', 'link')
-      .attr('fill', 'none')
-      .attr('stroke', '#3a3835')
-      .attr('stroke-width', 1.5)
-      .attr('stroke-opacity', 0.6)
-      .attr('d', l => linkGen({
-        source: positions.get(l.source._id),
-        target: positions.get(l.target._id),
-      }))
-      .style('opacity', 0)
-      .transition()
-      .duration(300)
-      .delay(l => (l.target.depth * 10) + 100)
-      .style('opacity', 1)
-      .selection();
-
-    function refreshLinks(movedId) {
-      g.selectAll('.link').filter(l => l.source._id === movedId || l.target._id === movedId)
-        .attr('d', l => linkGen({
-          source: positions.get(l.source._id),
-          target: positions.get(l.target._id),
-        }));
-    }
-
-    const dragBehavior = drag()
-      .on('start', function (event) {
-        event.sourceEvent.stopPropagation();
-        select(this).raise();
-        select(this).select('rect').attr('stroke-width', 2);
-        select(this).property('_dragged', false);
-      })
-      .on('drag', function (event, d) {
-        const pos = positions.get(d._id);
-        pos.x += event.dx;
-        pos.y += event.dy;
-        // Keep the drag scale visually correct
-        select(this).attr('transform', `translate(${pos.x},${pos.y}) scale(1.08)`);
-        refreshLinks(d._id);
-        select(this).property('_dragged', true);
-      })
-      .on('end', function (event, d) {
-        select(this).select('rect').attr('stroke-width', 1);
-      });
-
-    const node = g.selectAll('.node')
-      .data(rootNode.descendants(), d => d.data._id || Math.random()) // use unique keys if possible
-      .enter()
-      .append('g')
-      .attr('class', 'node')
-      .attr('transform', d => `translate(${d.x},${d.y}) scale(0.7)`)
-      .style('opacity', 0)
-      .style('cursor', 'grab')
-      .call(dragBehavior)
-      .on('click', (event, d) => {
-        if (select(event.currentTarget).property('_dragged')) return;
-        
-        // Pulse animation
-        select(event.currentTarget)
-          .transition().duration(150)
-          .attr('transform', `translate(${d.x},${d.y}) scale(1.15)`)
-          .transition().duration(150)
-          .attr('transform', `translate(${d.x},${d.y}) scale(1.05)`);
-
-        onClickRef.current(d.data.meta);
-      })
-      .on('mouseenter', function (event, d) {
-        if (select(this).property('_dragged')) return;
-        select(this).select('rect').attr('filter', 'brightness(1.4)');
-        
-        // Scale up hovered node
-        select(this).transition().duration(200).attr('transform', `translate(${d.x},${d.y}) scale(1.08)`);
-        
-        // Dim other nodes
-        g.selectAll('.node').filter(n => n !== d)
-          .transition().duration(200).style('opacity', 0.6);
-          
-        // Highlight edges
-        g.selectAll('.link')
-          .transition().duration(200)
-          .attr('stroke', l => (l.source === d || l.target === d) ? '#e05c3a' : '#3a3835')
-          .attr('stroke-opacity', l => (l.source === d || l.target === d) ? 1 : 0.15)
-          .attr('stroke-width', l => (l.source === d || l.target === d) ? 2.5 : 1.5);
-      })
-      .on('mouseleave', function (event, d) {
-        if (select(this).property('_dragged')) return;
-        select(this).select('rect').attr('filter', null);
-        
-        select(this).transition().duration(200).attr('transform', `translate(${d.x},${d.y}) scale(1)`);
-        
-        g.selectAll('.node')
-          .transition().duration(200).style('opacity', 1);
-          
-        g.selectAll('.link')
-          .transition().duration(200)
-          .attr('stroke', '#3a3835')
-          .attr('stroke-opacity', 0.6)
-          .attr('stroke-width', 1.5);
-      });
-
-    node.append('rect')
-      .attr('width',  110)
-      .attr('height',  40)
-      .attr('x', -55)
-      .attr('y', -20)
-      .attr('rx', 6)
-      .attr('fill',   d => nodeColor(d.data.meta.type).fill)
-      .attr('stroke', d => {
-        const meta = d.data.meta;
-        const isMutated = meta.line && mutatedLines.has(meta.line);
-        const isMatch   = q && (
-          meta.type?.toLowerCase().includes(q) ||
-          (meta.value && String(meta.value).toLowerCase().includes(q))
-        );
-        if (isMutated) return '#e05c3a';
-        if (isMatch)   return '#3a8aff';
-        return nodeColor(meta.type).stroke;
-      })
-      .attr('stroke-width', d => {
-        const meta = d.data.meta;
-        const isMutated = meta.line && mutatedLines.has(meta.line);
-        const isMatch   = q && (
-          meta.type?.toLowerCase().includes(q) ||
-          (meta.value && String(meta.value).toLowerCase().includes(q))
-        );
-        return (isMutated || isMatch) ? 2 : 1;
-      })
-      .attr('filter', d => {
-        const meta = d.data.meta;
-        const isMutated = meta.line && mutatedLines.has(meta.line);
-        const isMatch   = q && (
-          meta.type?.toLowerCase().includes(q) ||
-          (meta.value && String(meta.value).toLowerCase().includes(q))
-        );
-        if (isMutated) return 'drop-shadow(0 0 6px #e05c3a88)';
-        if (isMatch)   return 'drop-shadow(0 0 6px #3a8aff88)';
-        return null;
-      });
-
-    node.append('text')
-      .attr('text-anchor', 'middle')
-      .attr('y', -4)
-      .attr('fill', '#e8e6e0')
-      .style('font-family', 'IBM Plex Mono, monospace')
-      .style('font-size', '10px')
-      .style('pointer-events', 'none')
-      .text(d => truncate(d.data.name, 16));
-
-    node.append('text')
-      .attr('text-anchor', 'middle')
-      .attr('y', 10)
-      .attr('fill', '#888580')
-      .style('font-family', 'IBM Plex Sans, sans-serif')
-      .style('font-size', '9px')
-      .style('pointer-events', 'none')
-      .text(d => d.data.meta.line ? `L${d.data.meta.line}` : '');
-
-    // Entrance Animation Stagger
-    node.transition()
-      .duration(200)
-      .delay(d => {
-        if (!depthCounts[d.depth]) depthCounts[d.depth] = 0;
-        const c = depthCounts[d.depth]++;
-        return d.depth * 10 + c * 30; // 10ms stagger per level, 30ms stagger within level
-      })
-      .style('opacity', 1)
-      .attr('transform', d => `translate(${d.x},${d.y}) scale(1.05)`)
-      .transition()
-      .duration(100)
-      .attr('transform', d => `translate(${d.x},${d.y}) scale(1)`);
-
-  }, [data, search, mutatedLines, replayMode]);
-
-  useEffect(() => {
-    if (!replayMode) {
-      renderTree();
-    }
-    const handleResize = () => { if (!replayMode) renderTree(); };
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, [renderTree, replayMode]);
-
-  function renderReplayFrame(visNodesSet, visEdgesSet, cStep) {
-    if (!data || !svgRef.current) return;
-    const q = search.trim().toLowerCase();
-    const svg = select(svgRef.current);
-    svg.selectAll('*').remove();
-
-    const root   = hierarchy(data);
-    const layout = tree().nodeSize([NODE_W, NODE_H]);
-    layout(root);
-
-    let x0 = Infinity, x1 = -Infinity;
-    root.each(d => {
-      if (d.x > x1) x1 = d.x;
-      if (d.x < x0) x0 = d.x;
-    });
-
-    const treeHeight = root.height * NODE_H + 80;
-    const svgHeight  = Math.max(600, treeHeight);
-
-    const container = svgRef.current.parentElement;
-    const W = container.clientWidth;
-
-    const treeWidth = x1 - x0 + NODE_W;
-    const svgWidth = Math.max(W, treeWidth + 40);
-
-    svg.attr('height', svgHeight);
-    svg.attr('width', svgWidth);
-
-    const startX = treeWidth < W ? (W - treeWidth) / 2 : 20;
-
-    const g = svg.append('g');
-    g.attr('transform', `translate(${startX - x0 + NODE_W/2}, 40)`);
-
-    const linkGen = linkVertical().x(d => d.x).y(d => d.y);
-
-    const allLinks = root.links();
-    const visLinks = allLinks.filter(l => {
-      return visEdgesSet.has(l.target.data.meta && l.target.data.meta.type
-        ? l.target.data.meta.type + (l.target.data.meta.line || '0') + l.target.data.name
-        : l.target.data.name);
-    });
-
-    g.selectAll('.link')
-      .data(visLinks)
-      .enter().append('path')
-      .attr('class', 'link')
-      .attr('fill', 'none')
-      .attr('stroke', '#3a3835')
-      .attr('stroke-width', 1.5)
-      .attr('stroke-opacity', 0.6)
-      .attr('d', linkGen);
-
-    const allNodes = root.descendants();
-    const visNodes = allNodes.filter(n => {
-      return visNodesSet.has(n.data.meta && n.data.meta.type
-        ? n.data.meta.type + (n.data.meta.line || '0') + n.data.name
-        : n.data.name);
-    });
-
-    const nodeGroups = g.selectAll('.node')
-      .data(visNodes)
-      .enter().append('g')
-      .attr('class', 'node')
-      .attr('transform', d => `translate(${d.x},${d.y})`);
-
-    nodeGroups.append('rect')
-      .attr('width',  110)
-      .attr('height',  40)
-      .attr('x', -55)
-      .attr('y', -20)
-      .attr('rx', 6)
-      .attr('fill', d => nodeColor(d.data.meta?.type).fill)
-      .attr('stroke', d => nodeColor(d.data.meta?.type).stroke)
-      .attr('stroke-width', 1);
-
-    nodeGroups.append('text')
-      .attr('text-anchor', 'middle')
-      .attr('y', -4)
-      .attr('fill', '#e8e6e0')
-      .style('font-family', 'IBM Plex Mono, monospace')
-      .style('font-size', '10px')
-      .style('pointer-events', 'none')
-      .text(d => truncate(d.data.name, 16));
-
-    nodeGroups.append('text')
-      .attr('text-anchor', 'middle')
-      .attr('y', 10)
-      .attr('fill', '#888580')
-      .style('font-family', 'IBM Plex Sans, sans-serif')
-      .style('font-size', '9px')
-      .style('pointer-events', 'none')
-      .text(d => d.data.meta?.line ? `L${d.data.meta.line}` : '');
-
-    const lastStep = stepsRef.current[cStep - 1];
-    if (lastStep && lastStep.kind === 'node') {
-      const lastKey = lastStep.node.data.meta && lastStep.node.data.meta.type
-        ? lastStep.node.data.meta.type + (lastStep.node.data.meta.line || '0') + lastStep.node.data.name
-        : lastStep.node.data.name;
-      g.selectAll('.node').each(function(d) {
-        const key = d.data.meta && d.data.meta.type
-          ? d.data.meta.type + (d.data.meta.line || '0') + d.data.name
-          : d.data.name;
-        if (key === lastKey) {
-          select(this).select('rect')
-            .attr('stroke', '#e05c3a')
-            .attr('stroke-width', 2.5);
-        }
-      });
-    }
-
-    g.selectAll('.node').each(function(d) {
       const key = d.data.meta && d.data.meta.type
         ? d.data.meta.type + (d.data.meta.line || '0') + d.data.name
         : d.data.name;
-      const isLast = lastStep && lastStep.kind === 'node' &&
-        (lastStep.node.data.meta && lastStep.node.data.meta.type
-          ? lastStep.node.data.meta.type + (lastStep.node.data.meta.line || '0') + lastStep.node.data.name
-          : lastStep.node.data.name) === key;
-      if (!isLast) {
-        select(this).style('opacity', 0.55);
-      }
+      nodeMap.set(d._id, { key, mutated: mutatedLines.has(d.data.meta?.line) });
     });
-  }
+
+    const mutatedNodeIds = new Set();
+    if (activeFilter === 'mutated') {
+       rootNode.descendants().forEach(d => {
+           if (nodeMap.get(d._id).mutated) {
+               let curr = d;
+               while(curr) {
+                   mutatedNodeIds.add(curr._id);
+                   curr = curr.parent;
+               }
+           }
+       });
+    }
+
+    const links = rootNode.links();
+
+    const linkSel = g.selectAll('.edge')
+      .data(links)
+      .enter()
+      .append('path')
+      .attr('d', l => {
+         const sx = l.source.x;
+         const sy = l.source.y + H/2;
+         const tx = l.target.x;
+         const ty = l.target.y - H/2;
+         const midY = (sy + ty) / 2;
+         return `M${sx},${sy} C${sx},${midY} ${tx},${midY} ${tx},${ty}`;
+      })
+      .attr('fill', 'none')
+      .attr('stroke', l => nodeMap.get(l.target._id).mutated ? '#d4522a' : '#3a3835')
+      .attr('stroke-width', l => nodeMap.get(l.target._id).mutated ? 1.5 : 1)
+      .attr('stroke-dasharray', l => nodeMap.get(l.target._id).mutated ? '4 3' : 'none');
+
+    const nodeSel = g.selectAll('.ast-node')
+      .data(rootNode.descendants(), d => d.data.name + Math.random())
+      .enter()
+      .append('g')
+      .attr('class', 'ast-node')
+      .attr('transform', d => `translate(${d.x - W/2}, ${d.y - H/2})`)
+      .style('cursor', 'pointer')
+      .on('click', (event, d) => {
+         event.stopPropagation();
+         setSelectedNode({
+             label: d.data.meta?.type || d.data.name,
+             type: getNodeCategory(d.data.meta?.type),
+             line: d.data.meta?.line,
+             sub: truncate(d.data.name, 20),
+             mutated: nodeMap.get(d._id).mutated,
+             info: d.data.meta?.detail || 'No detailed info available.'
+         });
+         if (onNodeClick) onNodeClick(d.data.meta);
+      });
+
+    nodeSel.each(function(d) {
+        const nMap = nodeMap.get(d._id);
+        const type = getNodeCategory(d.data.meta?.type);
+        const c = nMap.mutated ? MUT_COLOR : TYPE_COLOR[type];
+        
+        const gNode = select(this);
+        gNode.append('rect')
+           .attr('width', W)
+           .attr('height', H)
+           .attr('rx', 8)
+           .attr('fill', c.fill)
+           .attr('stroke', c.stroke)
+           .attr('stroke-width', nMap.mutated ? 1.5 : 0.5)
+           .on('mouseenter', function() { select(this).attr('filter', 'brightness(1.1)'); })
+           .on('mouseleave', function() { select(this).attr('filter', null); });
+
+        if (nMap.mutated) {
+            gNode.append('rect')
+               .attr('x', W - 18)
+               .attr('y', -6)
+               .attr('width', 20)
+               .attr('height', 12)
+               .attr('rx', 3)
+               .attr('fill', '#d4522a');
+            gNode.append('text')
+               .attr('x', W - 8)
+               .attr('y', 2)
+               .attr('text-anchor', 'middle')
+               .attr('font-size', '7')
+               .attr('font-family', 'var(--font-code, monospace)')
+               .attr('fill', '#fff')
+               .attr('font-weight', '700')
+               .style('pointer-events', 'none')
+               .text('MUT');
+        }
+
+        const cxInner = W/2;
+        gNode.append('text')
+            .attr('x', cxInner)
+            .attr('y', 17)
+            .attr('text-anchor', 'middle')
+            .attr('fill', c.text)
+            .attr('font-size', '11')
+            .attr('font-weight', '600')
+            .attr('font-family', 'var(--font-code, monospace)')
+            .style('pointer-events', 'none')
+            .text(d.data.meta?.type || d.data.name);
+
+        gNode.append('text')
+            .attr('x', cxInner)
+            .attr('y', 30)
+            .attr('text-anchor', 'middle')
+            .attr('fill', c.text)
+            .attr('font-size', '10')
+            .attr('opacity', 0.75)
+            .attr('font-family', 'var(--font-code, monospace)')
+            .style('pointer-events', 'none')
+            .text(truncate(d.data.name, 18));
+
+        gNode.append('text')
+            .attr('x', cxInner)
+            .attr('y', 43)
+            .attr('text-anchor', 'middle')
+            .attr('fill', c.text)
+            .attr('font-size', '9')
+            .attr('opacity', 0.55)
+            .attr('font-family', 'var(--font-code, monospace)')
+            .style('pointer-events', 'none')
+            .text(d.data.meta?.line ? `L${d.data.meta.line}` : (d.data.meta?.type === 'Program' ? 'root' : ''));
+    });
+
+    if (isReplayRender) {
+         nodeSel.style('opacity', d => limitNodes.has(nodeMap.get(d._id).key) ? 1 : 0);
+         linkSel.style('opacity', l => limitEdges.has(nodeMap.get(l.target._id).key) ? 1 : 0);
+         
+         const lastStep = stepsRef.current[cStep - 1];
+         if (lastStep && lastStep.kind === 'node') {
+             const lKey = lastStep.node.data.meta && lastStep.node.data.meta.type
+                ? lastStep.node.data.meta.type + (lastStep.node.data.meta.line || '0') + lastStep.node.data.name
+                : lastStep.node.data.name;
+             nodeSel.each(function(d) {
+                 if (nodeMap.get(d._id).key === lKey) {
+                     select(this).select('rect').attr('stroke-width', 2).attr('stroke', '#e05c3a');
+                 } else {
+                     select(this).style('opacity', 0.6);
+                 }
+             });
+         }
+    } else {
+         if (activeFilter === 'mutated') {
+             nodeSel.style('opacity', d => mutatedNodeIds.has(d._id) ? 1 : 0)
+                    .style('pointer-events', d => mutatedNodeIds.has(d._id) ? 'all' : 'none');
+             linkSel.style('opacity', l => mutatedNodeIds.has(l.target._id) && mutatedNodeIds.has(l.source._id) ? 1 : 0);
+         } else {
+             nodeSel.style('opacity', 0).transition().duration(250).delay(d => d.depth * 25).style('opacity', 1);
+             linkSel.style('opacity', 0).transition().duration(250).delay(l => l.target.depth * 25).style('opacity', 1);
+         }
+    }
+  }, [data, isCollapsed, activeFilter, mutatedLines]);
+
+  useEffect(() => {
+    if (!replayMode) {
+        renderTreeCore();
+    }
+  }, [renderTreeCore, replayMode]);
+
+  // Zoom helpers
+  const handleZoomIn = () => {
+    if (svgRef.current && zoomRef.current) {
+        select(svgRef.current).transition().duration(300).call(zoomRef.current.scaleBy, 1.3);
+    }
+  };
+  const handleZoomOut = () => {
+    if (svgRef.current && zoomRef.current) {
+        select(svgRef.current).transition().duration(300).call(zoomRef.current.scaleBy, 0.75);
+    }
+  };
+  const handleResetZoom = () => {
+    if (svgRef.current && zoomRef.current && containerRef.current) {
+      const viewW = containerRef.current.clientWidth;
+      select(svgRef.current)
+        .transition()
+        .duration(750)
+        .call(zoomRef.current.transform, zoomIdentity.translate(viewW/2 - W/2, 40));
+    }
+  };
 
   function advanceStep(step) {
     if (step >= stepsRef.current.length) {
@@ -431,34 +326,70 @@ const AstTree = ({ data, onNodeClick, search = '', mutatedLines = new Set() }) =
       exitReplay();
       return;
     }
-
     const s = stepsRef.current[step];
     const key = s.node.data.meta && s.node.data.meta.type
       ? s.node.data.meta.type + (s.node.data.meta.line || '0') + s.node.data.name
       : s.node.data.name;
 
-    if (s.kind === 'node') {
-      visibleNodesRef.current.add(key);
-    } else {
-      visibleEdgesRef.current.add(key);
-    }
+    if (s.kind === 'node') visibleNodesRef.current.add(key);
+    else visibleEdgesRef.current.add(key);
 
     setCurrentStep(step + 1);
-    renderReplayFrame(visibleNodesRef.current, visibleEdgesRef.current, step + 1);
+    
+    // Instead of completely recreating the AST tree:
+    const svg = select(svgRef.current);
+    const tDur = STEP_DURATION[speed] ? STEP_DURATION[speed] * 0.7 : 300;
+
+    // Reset previous node's highlight if needed
+    const lastStep = step > 0 ? stepsRef.current[step - 1] : null;
+    if (lastStep && lastStep.kind === 'node') {
+         const prevKey = lastStep.node.data.meta && lastStep.node.data.meta.type
+           ? lastStep.node.data.meta.type + (lastStep.node.data.meta.line || '0') + lastStep.node.data.name
+           : lastStep.node.data.name;
+         
+         svg.selectAll('.ast-node').filter(d => {
+              const dkey = d.data.meta && d.data.meta.type ? d.data.meta.type + (d.data.meta.line || '0') + d.data.name : d.data.name;
+              return dkey === prevKey;
+         }).select('rect')
+           .transition().duration(200)
+           .attr('stroke', d => mutatedLines?.has(d.data.meta?.line) ? '#d4522a' : 'transparent')
+           .attr('stroke-width', d => mutatedLines?.has(d.data.meta?.line) ? 1.5 : 1);
+    }
+
+    // Now correctly fade in the new node sequentially
+    if (s.kind === 'node') {
+        const tgt = svg.selectAll('.ast-node').filter(d => {
+             const dkey = d.data.meta && d.data.meta.type ? d.data.meta.type + (d.data.meta.line || '0') + d.data.name : d.data.name;
+             return dkey === key;
+        });
+        
+        tgt.transition().duration(tDur).style('opacity', 1);
+        tgt.select('rect').transition().duration(tDur)
+          .attr('stroke-width', 2.5).attr('stroke', '#ffcc00');
+    } else {
+        svg.selectAll('.edge').filter(l => {
+             const trg = l.target.data;
+             const dkey = trg.meta && trg.meta.type ? trg.meta.type + (trg.meta.line || '0') + trg.name : trg.name;
+             return dkey === key;
+        })
+        .transition().duration(tDur)
+        .style('opacity', l => mutatedLines?.has(l.target.data.meta?.line) ? 0.7 : 1);
+    }
   }
 
   function startPlay() {
     if (timerRef.current) clearInterval(timerRef.current);
     timerRef.current = setInterval(() => {
       setCurrentStep(prev => {
-        if (prev >= stepsRef.current.length) {
+        const next = prev + 1;
+        if (next - 1 >= stepsRef.current.length) {
           clearInterval(timerRef.current);
           setIsPlaying(false);
-          exitReplay();
+          setTimeout(() => exitReplay(), 0);
           return prev;
         }
-        advanceStep(prev);
-        return prev + 1;
+        setTimeout(() => advanceStep(next - 1), 0);
+        return next;
       });
     }, STEP_DURATION[speed] || 400);
   }
@@ -466,9 +397,6 @@ const AstTree = ({ data, onNodeClick, search = '', mutatedLines = new Set() }) =
   function enterReplay() {
     if (!data) return;
     const root = hierarchy(data);
-    const layout = tree().nodeSize([NODE_W, NODE_H]);
-    layout(root);
-
     const steps = buildReplaySteps(root);
     stepsRef.current = steps;
     visibleNodesRef.current = new Set();
@@ -477,10 +405,7 @@ const AstTree = ({ data, onNodeClick, search = '', mutatedLines = new Set() }) =
     setCurrentStep(0);
     setReplayMode(true);
     setIsPlaying(false);
-
-    const svg = select(svgRef.current);
-    svg.selectAll('*').remove();
-    svg.on('.zoom', null); // Disable zoom
+    renderTreeCore(true, new Set(), new Set(), 0);
   }
 
   function exitReplay() {
@@ -489,161 +414,82 @@ const AstTree = ({ data, onNodeClick, search = '', mutatedLines = new Set() }) =
     setCurrentStep(0);
     visibleNodesRef.current = new Set();
     visibleEdgesRef.current = new Set();
-    renderTree();
   }
 
-  useEffect(() => {
-    if (replayMode) {
-      exitReplay();
-    }
-  }, [data]);
-
-  const handleResetZoom = () => {
-    if (svgRef.current && zoomRef.current && !replayMode) {
-      select(svgRef.current)
-        .transition()
-        .duration(750)
-        .call(zoomRef.current.transform, zoomIdentity);
-    }
-  };
-
   return (
-    <div className={styles.wrapper}>
-      <button 
-        className={styles.replayTrigger}
-        onClick={() => replayMode ? exitReplay() : enterReplay()}
-        disabled={!data}
-        title={!data ? "Compile first" : ""}
-      >
-        {replayMode ? 'Exit replay' : '▶ Build replay'}
-      </button>
-
-      {!replayMode && (
-        <button className={styles.resetBtn} onClick={handleResetZoom}>
-          RESET ZOOM
-        </button>
-      )}
-
-      <svg ref={svgRef} className={styles.svg}></svg>
-
-      {replayMode && (
-        <div className={styles.replayControls}>
-          <button
-            className={styles.ctrlBtn}
-            onClick={() => {
-              stopPlay();
-              if (currentStep > 0) {
-                visibleNodesRef.current = new Set();
-                visibleEdgesRef.current = new Set();
-                for (let i = 0; i < currentStep - 1; i++) {
-                  const s = stepsRef.current[i];
-                  const key = s.node.data.meta && s.node.data.meta.type
-                    ? s.node.data.meta.type + (s.node.data.meta.line || '0') + s.node.data.name
-                    : s.node.data.name;
-                  if (s.kind === 'node') visibleNodesRef.current.add(key);
-                  else visibleEdgesRef.current.add(key);
-                }
-                setCurrentStep(currentStep - 1);
-                renderReplayFrame(visibleNodesRef.current, visibleEdgesRef.current, currentStep - 1);
-              }
-            }}
-            disabled={currentStep === 0}
-          >
-            ◀ Step
+    <div className={styles.wrapper} ref={containerRef}>
+      {!replayMode ? (
+        <div className={styles.controls}>
+          <button className={activeFilter === 'all' ? styles.active : ''} onClick={() => setActiveFilter('all')}>All nodes</button>
+          <button className={activeFilter === 'mutated' ? styles.active : ''} onClick={() => setActiveFilter('mutated')}>Mutated only</button>
+          <button className={isCollapsed ? styles.active : ''} onClick={() => setIsCollapsed(!isCollapsed)}>
+            {isCollapsed ? 'Expand all' : 'Collapse subtrees'}
           </button>
-
-          <button
-            className={`${styles.ctrlBtn} ${styles.playBtn}`}
-            onClick={() => {
-              if (isPlaying) {
-                stopPlay();
-              } else {
-                setIsPlaying(true);
-                startPlay();
-              }
-            }}
-          >
+          <div style={{ flex: 1 }}></div>
+          <div className={styles.legend}>
+            <div className={styles.leg}><div className={styles.legDot} style={{background: '#4b6b9e'}}></div> Program</div>
+            <div className={styles.leg}><div className={styles.legDot} style={{background: '#3a7a5e'}}></div> Statement</div>
+            <div className={styles.leg}><div className={styles.legDot} style={{background: '#7a5e9a'}}></div> Expression</div>
+            <div className={styles.leg}><div className={styles.legDot} style={{background: '#8a6a3a'}}></div> Literal</div>
+            <div className={styles.leg}><div className={styles.legDot} style={{background: '#d4522a'}}></div> Mutated</div>
+          </div>
+          <button className={styles.replayTrigger} onClick={enterReplay} disabled={!data}>▶ Replay</button>
+        </div>
+      ) : (
+        <div className={styles.replayControls}>
+          <button className={styles.ctrlBtn} onClick={exitReplay}>Exit replay</button>
+          <button className={`${styles.ctrlBtn} ${styles.playBtn}`} onClick={() => { if (isPlaying) stopPlay(); else { setIsPlaying(true); startPlay(); } }}>
             {isPlaying ? '⏸ Pause' : '▶ Play'}
           </button>
-
-          <button
-            className={styles.ctrlBtn}
-            onClick={() => {
-              stopPlay();
-              advanceStep(currentStep);
-            }}
-            disabled={currentStep >= totalSteps}
-          >
-            Step ▶
-          </button>
-
-          <span className={styles.counter}>
-            Node {Math.ceil(currentStep / 2)} of {Math.ceil(totalSteps / 2)}
-          </span>
-
+          <button className={styles.ctrlBtn} onClick={() => advanceStep(currentStep)} disabled={currentStep >= totalSteps}>Step ▶</button>
+          <span className={styles.counter}>Node {Math.ceil(currentStep / 2)} of {Math.ceil(totalSteps / 2)}</span>
           <div className={styles.speedGroup}>
             <span className={styles.speedLabel}>Speed</span>
             {[0.5, 1, 2].map(s => (
-              <button
-                key={s}
-                className={`${styles.speedBtn} ${speed === s ? styles.speedActive : ''}`}
-                onClick={() => {
-                  setSpeed(s);
-                  if (isPlaying) {
-                    stopPlay();
-                    setIsPlaying(true);
-                    if (timerRef.current) clearInterval(timerRef.current);
-                    timerRef.current = setInterval(() => {
-                      setCurrentStep(prev => {
-                        if (prev >= stepsRef.current.length) {
-                          clearInterval(timerRef.current);
-                          setIsPlaying(false);
-                          exitReplay();
-                          return prev;
-                        }
-                        advanceStep(prev);
-                        return prev + 1;
-                      });
-                    }, STEP_DURATION[s] || 400);
-                  }
-                }}
-              >
-                {s}x
-              </button>
+              <button key={s} className={`${styles.speedBtn} ${speed === s ? styles.speedActive : ''}`} onClick={() => setSpeed(s)}>{s}x</button>
             ))}
           </div>
+        </div>
+      )}
 
-          <div className={styles.progressBar}>
-            <div
-              className={styles.progressFill}
-              style={{ width: `${totalSteps > 0 ? (currentStep / totalSteps) * 100 : 0}%` }}
-            />
+      <div className={styles.svgWrap}>
+        <svg ref={svgRef} data-ast-tree="true" className={styles.svg} xmlns="http://www.w3.org/2000/svg"></svg>
+        {!replayMode && (
+          <div style={{ position: 'absolute', top: 12, right: 12, display: 'flex', gap: '6px', zIndex: 10 }}>
+            <button className={styles.ctrlBtn} onClick={handleZoomIn} title="Zoom In">＋</button>
+            <button className={styles.ctrlBtn} onClick={handleZoomOut} title="Zoom Out">－</button>
+            <button className={styles.ctrlBtn} onClick={handleResetZoom}>Reset Zoom</button>
           </div>
+        )}
+      </div>
 
-          <div style={{ position: 'relative', height: '20px', overflow: 'hidden', width: '100%', marginTop: '8px', display: 'flex', justifyContent: 'center' }}>
-            <AnimatePresence mode="popLayout">
-              {currentStep > 0 && stepsRef.current[currentStep - 1] && (
-                <motion.div
-                  key={currentStep}
-                  initial={{ y: 20, opacity: 0 }}
-                  animate={{ y: 0, opacity: 1 }}
-                  exit={{ y: -20, opacity: 0 }}
-                  transition={{ duration: 0.2 }}
-                  className={styles.replayStatusText}
-                >
-                  {(() => {
-                    const s = stepsRef.current[currentStep - 1];
-                    if (s.kind === 'node') {
-                      const parentType = s.node.parent?.data?.meta?.type || 'Root';
-                      return `Added: ${s.node.data.meta?.type} → child of ${parentType}`;
-                    } else {
-                      return `Linked: ${s.node.parent?.data?.meta?.type} → ${s.node.data.meta?.type}`;
-                    }
-                  })()}
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
+      {replayMode && (
+        <div className={styles.progressBar}>
+          <div className={styles.progressFill} style={{ width: `${totalSteps > 0 ? (currentStep / totalSteps) * 100 : 0}%` }} />
+        </div>
+      )}
+
+      {!replayMode && (
+        <div className={styles.detailPanel}>
+          {selectedNode ? (
+            <>
+              <div className={styles.dpTitle} style={{ color: selectedNode.mutated ? '#d4522a' : TYPE_COLOR[selectedNode.type]?.stroke }}>
+                {selectedNode.label}
+                <span className={`${styles.badge} ${selectedNode.mutated ? styles.badgeMut : styles.badgeSafe}`}>
+                  {selectedNode.mutated ? 'MUTATED' : 'CLEAN'}
+                </span>
+              </div>
+              <div className={styles.dpGrid}>
+                <div className={styles.dpKey}>Node type</div><div className={styles.dpVal}>{selectedNode.label}</div>
+                <div className={styles.dpKey}>Category</div><div className={styles.dpVal}>{selectedNode.type}</div>
+                {selectedNode.line && <><div className={styles.dpKey}>Source line</div><div className={styles.dpVal}>L{selectedNode.line}</div></>}
+                {selectedNode.sub && <><div className={styles.dpKey}>Value / sig</div><div className={styles.dpVal}>{selectedNode.sub}</div></>}
+              </div>
+              <div className={styles.dpHint}>{selectedNode.info}</div>
+            </>
+          ) : (
+             <div className={styles.dpTitleHint}>Click any node to inspect it</div>
+          )}
         </div>
       )}
     </div>

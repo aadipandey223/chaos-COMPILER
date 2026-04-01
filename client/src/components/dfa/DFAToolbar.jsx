@@ -12,7 +12,11 @@ const DFAToolbar = ({ svgRef }) => {
     dispatch({ type: 'SET_LOADING', payload: true });
     try {
       const result = await generateDFA(SOURCE);
-      dispatch({ type: 'SET_AUTO_GRAPH', payload: { nodes: result.states, edges: result.transitions } });
+      const payload = { nodes: result.states, edges: result.transitions };
+      
+      dispatch({ type: 'SET_AUTO_GRAPH', payload });
+      dispatch({ type: 'SET_USER_GRAPH', payload });
+      dispatch({ type: 'SET_MODE', payload: 'user' });
     } catch (err) {
       console.error(err);
       alert('Failed to generate DFA ' + err.message);

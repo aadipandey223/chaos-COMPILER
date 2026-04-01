@@ -73,15 +73,24 @@ static const char* node_type_to_string(NodeType type) {
         case NODE_RETURN: return "ReturnStatement";
         case NODE_IF: return "IfStatement";
         case NODE_WHILE: return "WhileStatement";
+        case NODE_FOR: return "ForStatement";
         case NODE_VAR_DECL: return "VariableDeclaration";
         case NODE_EXPR_STMT: return "ExpressionStatement";
         case NODE_BINARY_OP: return "BinaryExpression";
         case NODE_UNARY_OP: return "UnaryExpression";
         case NODE_ASSIGN: return "AssignmentExpression";
         case NODE_NUMBER: return "NumericLiteral";
-        case NODE_STRING: return "StringLiteral";
+        case NODE_STRING_LITERAL: return "StringLiteral";
         case NODE_IDENT: return "Identifier";
         case NODE_CALL: return "CallExpression";
+        case NODE_POINTER_DECL: return "PointerDeclaration";
+        case NODE_ADDRESS_OF: return "AddressOfExpression";
+        case NODE_DEREF: return "DereferenceExpression";
+        case NODE_ARRAY_DECL: return "ArrayDeclaration";
+        case NODE_ARRAY_ACCESS: return "ArrayAccess";
+        case NODE_STRUCT_DECL: return "StructDeclaration";
+        case NODE_MEMBER_ACCESS: return "MemberAccess";
+        case NODE_CAST_EXPR: return "CastExpression";
         default: return "Unknown";
     }
 }

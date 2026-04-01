@@ -16,14 +16,66 @@ const MUTATION_TYPES = [
   { key: 'DEAD_CODE_INJECT',  label: 'Dead code',  color: 'var(--mut-deadcode)'  },
 ];
 
+const SAMPLES = {
+  custom: '',
+  basic: `int add(int a, int b) {
+    return a + b;
+}
+
+int main() {
+    int x = 10;
+    int y = 20;
+    if (x < y) {
+        x = x + 1;
+    }
+    return add(x, y);
+}`,
+  loop: `int factorial(int n) {
+    int result = 1;
+    for (int i = 1; i <= n; i = i + 1) {
+        result = result * i;
+    }
+    return result;
+}
+
+int main() {
+    return factorial(5);
+}`,
+  logic: `int max(int a, int b) {
+    if (a > b) {
+        return a;
+    } else {
+        return b;
+    }
+}
+
+int main() {
+    int x = max(10, 20);
+    int y = max(30, 5);
+    return max(x, y);
+}`
+};
+
 export default function EditorPage() {
   const { state, dispatch } = useCompiler();
   const navigate = useNavigate();
+  const [selectedSample, setSelectedSample] = useState('custom');
 
   // We need a unique key for the results card to trigger the slot machine animation on each success
   const resultsKey = React.useMemo(() => Date.now(), [state.mutations]);
 
-  const handleCodeChange = (val) => dispatch({ type: 'SET_CODE', payload: val });
+  const handleCodeChange = (val) => {
+    dispatch({ type: 'SET_CODE', payload: val });
+    setSelectedSample('custom');
+  };
+
+  const handleSampleChange = (e) => {
+    const val = e.target.value;
+    setSelectedSample(val);
+    if (val !== 'custom') {
+      dispatch({ type: 'SET_CODE', payload: SAMPLES[val] });
+    }
+  };
 
   const handleOptions = (e) => {
     const { name, value } = e.target;
@@ -105,6 +157,26 @@ export default function EditorPage() {
             transition={{ duration: 0.3 }}
           >
             Chaos settings
+          </motion.div>
+
+          <motion.div
+            className={styles.field}
+            initial={{ y: 10, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ duration: 0.3, delay: 0.04 }}
+          >
+            <label className={styles.label} htmlFor="sample-select">Load sample</label>
+            <select
+              id="sample-select"
+              value={selectedSample}
+              onChange={handleSampleChange}
+              className={styles.select}
+            >
+              <option value="custom">Custom code</option>
+              <option value="basic">Basic Arithmetic</option>
+              <option value="loop">Factorial (Loop)</option>
+              <option value="logic">Max (Logic / If-Else)</option>
+            </select>
           </motion.div>
 
           <motion.div

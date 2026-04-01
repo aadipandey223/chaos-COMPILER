@@ -594,7 +594,20 @@ MutationLog chaos_run(Node* ast, ChaosConfig cfg) {
     for (int pass = 1; pass <= cfg_chain_depth; pass++) {
         current_pass = pass;
         remaining    = cfg.count;   /* reset count per pass */
-        walk(ast, NULL, 0);
+        
+        int attempts = 0;
+        int max_attempts = 50; // Prevent infinite loop if AST is too small to fulfill remaining amount
+        while (remaining > 0 && attempts < max_attempts) {
+            int old_remaining = remaining;
+            walk(ast, NULL, 0);
+            attempts++;
+            
+            // If we did a full walk and NO mutations were made, we might be out of eligible targets.
+            // Still loop just in case it was bad random chance, but increment attempt aggressively.
+            if (old_remaining == remaining) {
+                attempts += 5; // Fast-forward failure if we can't find anything to safely mutate
+            }
+        }
     }
 
     MutationLog result = *logptr;

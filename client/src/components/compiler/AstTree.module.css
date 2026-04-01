@@ -2,63 +2,161 @@
   position: relative;
   width: 100%;
   height: 600px;
-  background: #141412;
-  border: 1px solid #2a2825;
+  background: var(--surface-1, #141412);
+  border: 1px solid var(--border-color, #2a2825);
   border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+}
+
+.controls {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 0px;
+  flex-wrap: wrap;
+  padding: 12px;
+  border-bottom: 1px solid var(--border-color, #2a2825);
+  background: var(--surface-2, #1a1917);
+}
+
+.controls button {
+  font-size: 12px;
+  font-family: inherit;
+  padding: 5px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--border-color, #3a3835);
+  background: transparent;
+  color: var(--text-primary, #e8e4dd);
+  cursor: pointer;
+}
+
+.controls button:hover {
+  background: var(--surface-3, #2a2825);
+}
+
+.controls button.active {
+  background: #d4522a;
+  color: #fff;
+  border-color: #d4522a;
+}
+
+.legend {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.leg {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  color: var(--text-secondary, #9c9890);
+}
+
+.legDot {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+}
+
+.svgWrap {
+  flex: 1;
   overflow: hidden;
+  position: relative;
+  cursor: grab;
+}
+
+.svgWrap:active {
+  cursor: grabbing;
 }
 
 .svg {
   display: block;
   width: 100%;
   height: 100%;
-  cursor: grab;
-}
-.svg:active {
-  cursor: grabbing;
 }
 
-.resetBtn {
-  position: absolute;
-  top: 12px;
-  right: 12px;
-  z-index: 10;
-  background: #1a1a1a;
-  border: 1px solid #2a2a2a;
-  color: #888580;
-  font-family: 'IBM Plex Mono', monospace;
+.detailPanel {
+  margin: 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border-color, #3a3835);
+  background: var(--surface-2, #1a1917);
+  padding: 14px 16px;
+  font-size: 13px;
+  min-height: 90px;
+  transition: all .2s;
+}
+
+.dpTitle {
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--text-primary, #e8e4dd);
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+}
+
+.dpTitleHint {
+  color: var(--text-secondary, #9c9890);
+  font-weight: 400;
+  font-size: 13px;
+}
+
+.dpGrid {
+  display: grid;
+  grid-template-columns: 120px 1fr;
+  gap: 4px 12px;
+}
+
+.dpKey {
+  color: var(--text-secondary, #9c9890);
+  font-size: 12px;
+}
+
+.dpVal {
+  font-family: var(--font-code, 'JetBrains Mono', monospace);
+  font-size: 12px;
+  color: var(--text-primary, #e8e4dd);
+}
+
+.dpValMut {
+  color: #d4522a;
+  font-weight: 600;
+}
+
+.dpHint {
+  margin-top: 8px;
   font-size: 11px;
-  padding: 4px 10px;
+  color: var(--text-secondary, #9c9890);
+  line-height: 1.5;
+}
+
+.badge {
+  display: inline-block;
+  font-size: 10px;
+  padding: 1px 6px;
   border-radius: 4px;
-  cursor: pointer;
+  font-family: var(--font-code, 'JetBrains Mono', monospace);
+  margin-left: 6px;
+  vertical-align: middle;
 }
 
-.resetBtn:hover {
-  border-color: #e05c3a;
-  color: #e05c3a;
+.badgeMut {
+  background: rgba(212,82,42,.15);
+  color: #d4522a;
+  border: 1px solid rgba(212,82,42,.3);
 }
 
-.replayTrigger {
-  position: absolute;
-  top: 12px;
-  left: 12px;
-  z-index: 10;
-  background: #1a1917;
-  border: 1px solid #3a3835;
-  color: #e8e4dd;
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 11px;
-  padding: 5px 12px;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: border-color 0.15s, color 0.15s;
+.badgeSafe {
+  background: rgba(30,150,90,.12);
+  color: #1e9660;
+  border: 1px solid rgba(30,150,90,.25);
 }
 
-.replayTrigger:hover {
-  border-color: #e05c3a;
-  color: #e05c3a;
-}
-
+/* Replay controls preserving */
 .replayControls {
   display: flex;
   align-items: center;
@@ -78,7 +176,6 @@
   padding: 4px 12px;
   border-radius: 5px;
   cursor: pointer;
-  transition: background 0.15s, border-color 0.15s;
 }
 
 .ctrlBtn:hover:not(:disabled) {
@@ -94,71 +191,15 @@
 .playBtn {
   border-color: #e05c3a;
   color: #e05c3a;
-  min-width: 80px;
 }
+.counter { font-size: 11px; color: #9c9890; }
+.speedGroup { display: flex; align-items: center; gap: 4px; margin-left: auto; }
+.speedLabel { font-size: 10px; color: #6b6760; }
+.speedBtn { background: transparent; border: 1px solid #3a3835; color: #6b6760; font-size: 10px; padding: 2px 7px; border-radius: 4px; cursor: pointer; }
+.speedActive { border-color: #e05c3a !important; color: #e05c3a !important; }
+.progressBar { width: 100%; height: 2px; background: #2a2825; margin-top: 4px; }
+.progressFill { height: 100%; background: #e05c3a; transition: width 0.2s; }
 
-.playBtn:hover {
-  background: #2a1a14;
-}
-
-.counter {
-  font-size: 11px;
-  font-family: 'JetBrains Mono', monospace;
-  color: #9c9890;
-  margin: 0 4px;
-  white-space: nowrap;
-}
-
-.speedGroup {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  margin-left: auto;
-}
-
-.speedLabel {
-  font-size: 10px;
-  color: #6b6760;
-  margin-right: 2px;
-}
-
-.speedBtn {
-  background: transparent;
-  border: 1px solid #3a3835;
-  color: #6b6760;
-  font-size: 10px;
-  font-family: 'JetBrains Mono', monospace;
-  padding: 2px 7px;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: all 0.15s;
-}
-
-.speedBtn:hover {
-  border-color: #5a5855;
-  color: #9c9890;
-}
-
-.speedActive {
-  border-color: #e05c3a !important;
-  color: #e05c3a !important;
-}
-
-.progressBar {
-  width: 100%;
-  height: 2px;
-  background: #2a2825;
-  border-radius: 1px;
-  margin-top: 4px;
-  overflow: hidden;
-}
-
-.progressFill {
-  height: 100%;
-  background: #e05c3a;
-  border-radius: 1px;
-  transition: width 0.2s ease;
-}
 
 .replayStatusText {
   position: absolute;

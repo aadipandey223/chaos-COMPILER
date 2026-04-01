@@ -94,6 +94,9 @@ function dfaReducer(state, action) {
     case 'CLEAR_USER_GRAPH': {
       return pushHistory(state, { nodes: [], edges: [] });
     }
+    case 'SET_USER_GRAPH': {
+      return pushHistory(state, action.payload);
+    }
     case 'SET_LOADING': return { ...state, isLoading: action.payload };
     case 'SET_ERROR': return { ...state, error: action.payload };
     default: return state;

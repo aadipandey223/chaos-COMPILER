@@ -32,7 +32,7 @@ const LEGEND = [
 ];
 
 export default function AstPage() {
-  const { state: { ast, status, error, mutations } } = useCompiler();
+  const { state: { ast, code, status, error, mutations } } = useCompiler();
   const navigate = useNavigate();
   const [selected, setSelected] = useState(null);
   const [viewMode, setViewMode] = useState('tree');
@@ -93,7 +93,7 @@ export default function AstPage() {
     );
   }
 
-  const adapted = adaptAst(ast);
+  const adapted = adaptAst(ast, code, mutations);
   const total = countNodes(adapted);
   const typesSet = new Set();
   collectTypes(adapted, typesSet);
@@ -172,7 +172,7 @@ export default function AstPage() {
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
       >
-        <div className={styles.treePane} style={{ overflow: 'visible' }}>
+        <div className={styles.treePane} style={{ overflow: 'visible', width: '100%' }}>
           {viewMode === 'tree' ? (
             <AstTree
               data={adapted}
@@ -192,19 +192,6 @@ export default function AstPage() {
             </div>
           )}
         </div>
-        <AnimatePresence>
-          {viewMode === 'tree' && (
-            <motion.div
-              initial={{ x: 200, opacity: 0 }}
-              animate={{ x: 0, opacity: 1 }}
-              exit={{ x: 200, opacity: 0 }}
-              transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-              style={{ display: 'flex' }}
-            >
-              <NodeDetail node={selected} />
-            </motion.div>
-          )}
-        </AnimatePresence>
       </motion.div>
     </div>
   );

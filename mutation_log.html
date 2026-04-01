@@ -1,0 +1,302 @@
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font-sans,sans-serif)}
+
+.top-bar{display:flex;align-items:stretch;gap:12px;margin-bottom:14px;flex-wrap:wrap}
+.score-card{background:var(--color-background-secondary);border-radius:10px;padding:12px 16px;border:0.5px solid var(--color-border-tertiary);min-width:130px}
+.score-card .sc-label{font-size:11px;color:var(--color-text-tertiary);margin-bottom:4px}
+.score-card .sc-val{font-size:22px;font-weight:500;color:var(--color-text-primary);line-height:1}
+.score-card .sc-sub{font-size:11px;color:var(--color-text-secondary);margin-top:3px}
+.score-bar-wrap{flex:1;background:var(--color-background-secondary);border-radius:10px;padding:12px 16px;border:0.5px solid var(--color-border-tertiary);display:flex;flex-direction:column;justify-content:space-between}
+.score-bar-label{font-size:11px;color:var(--color-text-secondary);margin-bottom:6px}
+.score-bar-track{height:6px;background:var(--color-border-tertiary);border-radius:3px;overflow:hidden}
+.score-bar-fill{height:100%;border-radius:3px;background:#d4522a;transition:width .5s}
+.score-bar-legend{display:flex;justify-content:space-between;font-size:10px;color:var(--color-text-tertiary);margin-top:4px}
+
+.controls{display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap}
+.pill{font-size:11px;padding:4px 10px;border-radius:20px;border:0.5px solid var(--color-border-secondary);cursor:pointer;color:var(--color-text-secondary);background:transparent;display:inline-flex;align-items:center;gap:5px;transition:all .15s}
+.pill:hover{background:var(--color-background-secondary)}
+.pill.active{background:#d4522a;border-color:#d4522a;color:#fff}
+.pill .pill-count{font-size:10px;opacity:.7;font-weight:500}
+.sort-btn{font-size:11px;padding:4px 10px;border-radius:6px;border:0.5px solid var(--color-border-secondary);cursor:pointer;color:var(--color-text-secondary);background:transparent;display:flex;align-items:center;gap:4px}
+.sort-btn:hover{background:var(--color-background-secondary)}
+.spacer{flex:1}
+.export-btn{font-size:11px;padding:4px 10px;border-radius:6px;border:0.5px solid var(--color-border-secondary);cursor:pointer;color:var(--color-text-secondary);background:transparent}
+.export-btn:hover{background:var(--color-background-secondary)}
+
+.log-table{width:100%;border-collapse:collapse;border:0.5px solid var(--color-border-tertiary);border-radius:10px;overflow:hidden}
+.log-table th{font-size:11px;font-weight:500;color:var(--color-text-tertiary);text-align:left;padding:8px 12px;background:var(--color-background-secondary);border-bottom:0.5px solid var(--color-border-tertiary);letter-spacing:.03em}
+.log-table th.sortable{cursor:pointer;user-select:none}
+.log-table th.sortable:hover{color:var(--color-text-primary)}
+.th-score{text-align:right}
+
+.log-row{cursor:pointer;transition:background .1s}
+.log-row:hover td{background:var(--color-background-secondary)}
+.log-row.active td{background:rgba(212,82,42,.05)}
+.log-row td{padding:9px 12px;border-bottom:0.5px solid var(--color-border-tertiary);vertical-align:top;font-size:13px;color:var(--color-text-primary)}
+.log-row:last-child td{border-bottom:none}
+
+.row-num{font-size:12px;color:var(--color-text-tertiary);font-family:var(--font-mono);width:28px}
+.row-type{width:160px}
+.row-line{font-family:var(--font-mono);font-size:12px;color:var(--color-text-secondary);width:50px}
+.row-code{font-family:var(--font-mono);font-size:12px}
+.row-code .code-before{color:var(--color-text-secondary)}
+.row-code .code-arrow{color:var(--color-text-tertiary);margin:0 6px}
+.row-code .code-after{color:#c94c24;font-weight:500}
+.row-code .code-del{color:#b83232}
+.row-code .code-ins{color:#1a8a5a;font-weight:500}
+.row-score-td{text-align:right;width:90px}
+
+.type-badge{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-family:var(--font-mono);padding:2px 7px;border-radius:4px;font-weight:500}
+.score-pip{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-family:var(--font-mono);justify-content:flex-end}
+.score-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+
+.expand-row td{padding:0;border-bottom:0.5px solid var(--color-border-tertiary)}
+.expand-inner{overflow:hidden;max-height:0;transition:max-height .25s}
+.expand-inner.open{max-height:200px}
+.expand-body{padding:12px 14px 14px 52px;display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.exp-card{background:var(--color-background-secondary);border-radius:8px;padding:9px 11px;border:0.5px solid var(--color-border-tertiary)}
+.exp-label{font-size:10px;color:var(--color-text-tertiary);margin-bottom:3px;letter-spacing:.04em}
+.exp-val{font-size:12px;font-family:var(--font-mono);color:var(--color-text-primary)}
+.exp-val.danger{color:#c94c24;font-weight:500}
+.exp-hint{grid-column:1/-1;font-size:12px;line-height:1.6;padding:9px 11px;border-radius:0;border-left:2px solid #d4522a;background:rgba(212,82,42,.05);color:var(--color-text-secondary)}
+
+.footer-row{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;font-size:11px;color:var(--color-text-tertiary);border-top:0.5px solid var(--color-border-tertiary)}
+</style>
+
+<div>
+<div class="top-bar">
+  <div class="score-card">
+    <div class="sc-label">Chaos score</div>
+    <div class="sc-val" id="sc-num">74</div>
+    <div class="sc-sub">out of 100</div>
+  </div>
+  <div class="score-card">
+    <div class="sc-label">Mutations</div>
+    <div class="sc-val" id="sc-mutations">5</div>
+    <div class="sc-sub" id="sc-types">4 unique types</div>
+  </div>
+  <div class="score-card">
+    <div class="sc-label">Avg impact</div>
+    <div class="sc-val" id="sc-avg">6.2</div>
+    <div class="sc-sub">out of 10</div>
+  </div>
+  <div class="score-bar-wrap">
+    <div class="score-bar-label">Impact distribution</div>
+    <div style="display:flex;gap:4px;height:28px;align-items:flex-end">
+      <div id="bar-low"  style="flex:2;background:rgba(30,150,90,.35);border-radius:3px 3px 0 0;height:40%"></div>
+      <div id="bar-med"  style="flex:1;background:rgba(212,82,42,.5);border-radius:3px 3px 0 0;height:60%"></div>
+      <div id="bar-high" style="flex:2;background:#d4522a;border-radius:3px 3px 0 0;height:100%"></div>
+    </div>
+    <div class="score-bar-legend"><span>low (1-3)</span><span>med (4-6)</span><span>high (7-10)</span></div>
+  </div>
+</div>
+
+<div class="controls">
+  <button class="pill active" onclick="setFilter('all')" id="f-all">All <span class="pill-count">5</span></button>
+  <button class="pill" onclick="setFilter('VARIABLE_SWAP')" id="f-VARIABLE_SWAP">VARIABLE_SWAP <span class="pill-count">1</span></button>
+  <button class="pill" onclick="setFilter('DEAD_CODE_INJECT')" id="f-DEAD_CODE_INJECT">DEAD_CODE_INJECT <span class="pill-count">2</span></button>
+  <button class="pill" onclick="setFilter('STATEMENT_DELETION')" id="f-STATEMENT_DELETION">STATEMENT_DELETION <span class="pill-count">1</span></button>
+  <button class="pill" onclick="setFilter('CONDITION_FLIP')" id="f-CONDITION_FLIP">CONDITION_FLIP <span class="pill-count">1</span></button>
+  <div class="spacer"></div>
+  <button class="sort-btn" onclick="toggleSort()">Score <span id="sort-icon">↓</span></button>
+  <button class="export-btn" onclick="doExport('json')">JSON ↓</button>
+  <button class="export-btn" onclick="doExport('csv')">CSV ↓</button>
+</div>
+
+<div style="border:0.5px solid var(--color-border-tertiary);border-radius:10px;overflow:hidden">
+<table class="log-table" id="log-table">
+  <thead>
+    <tr>
+      <th style="width:32px">#</th>
+      <th>Type</th>
+      <th>Line</th>
+      <th>Change</th>
+      <th class="th-score sortable" onclick="toggleSort()">Score ↕</th>
+    </tr>
+  </thead>
+  <tbody id="log-body"></tbody>
+</table>
+<div class="footer-row">
+  <span id="footer-text">5 mutations · 4 unique types</span>
+  <span id="footer-hint" style="cursor:pointer;color:var(--color-text-tertiary)" onclick="sendPrompt('Explain the chaos score calculation for my Chaos Compiler project')">What is chaos score? ↗</span>
+</div>
+</div>
+</div>
+
+<script>
+const MUTATIONS = [
+  {id:'m1',type:'VARIABLE_SWAP',  line:2,  before:'a + b',       after:'b + a',      score:6, safe:true,  pass:1,
+   desc:'Swapped operand order in addition. For commutative ops this is equivalent, but exposes whether tests rely on evaluation order or side effects.',
+   hint:'If tests pass: your tests assume commutativity without asserting on it. Add assertions on operand-specific behavior.'},
+  {id:'m2',type:'DEAD_CODE_INJECT',line:1, before:'—',           after:'if(0){}',     score:3, safe:true,  pass:1,
+   desc:'Inserted an unreachable dead code block. It never executes, but coverage tools may count it as an uncovered branch.',
+   hint:'Score 3 = lowest impact. Any decent test suite kills this. Coverage % may drop slightly.'},
+  {id:'m3',type:'STATEMENT_DELETION',line:6,before:'int x = 10;',after:'(deleted)',   score:9, safe:false, pass:1,
+   desc:'Entire variable declaration removed. High impact — any code referencing x will fail or produce undefined behavior.',
+   hint:'Score 9 = high impact. If tests pass after this deletion, x is either unused or never asserted on.'},
+  {id:'m4',type:'CONDITION_FLIP',  line:8, before:'x < y',       after:'!(x < y)',    score:8, safe:true,  pass:1,
+   desc:'Condition negated with logical NOT. The if-branch now executes when the opposite condition is true.',
+   hint:'Score 8 = high impact. If tests survive: neither branch of this condition is covered by assertions.'},
+  {id:'m5',type:'DEAD_CODE_INJECT',line:8, before:'—',           after:'if(0){}',     score:3, safe:true,  pass:1,
+   desc:'Second dead code injection before the if block in main(). Same as mutation #2 — unreachable, coverage side-effect only.',
+   hint:'Two DEAD_CODE_INJECT mutations in one pass is common with high intensity. Low combined impact.'},
+];
+
+const TYPE_COLORS = {
+  VARIABLE_SWAP:    {bg:'rgba(83,74,183,.12)',  color:'#534AB7'},
+  DEAD_CODE_INJECT: {bg:'rgba(30,150,90,.1)',   color:'#1a8a5a'},
+  STATEMENT_DELETION:{bg:'rgba(220,50,50,.1)',  color:'#b83232'},
+  CONDITION_FLIP:   {bg:'rgba(186,117,23,.12)', color:'#7a4e0a'},
+  OPERATOR_MUTATION:{bg:'rgba(212,82,42,.12)',  color:'#c94c24'},
+  OFF_BY_ONE:       {bg:'rgba(100,100,220,.1)', color:'#3355bb'},
+};
+
+const HINTS = {
+  DEAD_CODE_INJECT:'Score 3 = lowest impact. Coverage % may drop.',
+  VARIABLE_SWAP:'Tests pass? Commutative assumption is untested.',
+  STATEMENT_DELETION:'High impact — deleted statement was never asserted on.',
+  CONDITION_FLIP:'High impact — both branches of this condition are not covered.',
+  OPERATOR_MUTATION:'Maximum impact — computed value is never verified by tests.',
+  OFF_BY_ONE:'Boundary condition is not covered.',
+};
+
+let activeFilter = 'all';
+let sortDir = 'desc';
+let openRow = null;
+
+function scoreColor(s) {
+  if (s >= 8) return '#c94c24';
+  if (s >= 5) return '#b87a10';
+  return '#1a8a5a';
+}
+function scoreDot(s) {
+  return scoreColor(s);
+}
+
+function typeBadge(type) {
+  const c = TYPE_COLORS[type] || {bg:'rgba(100,100,100,.1)',color:'var(--color-text-secondary)'};
+  return `<span class="type-badge" style="background:${c.bg};color:${c.color}">${type}</span>`;
+}
+
+function codeChange(m) {
+  if (m.type === 'STATEMENT_DELETION')
+    return `<span class="code-del">${esc(m.before)}</span><span class="code-arrow">→</span><span class="code-ins">(deleted)</span>`;
+  if (m.type === 'DEAD_CODE_INJECT')
+    return `<span class="code-before">—</span><span class="code-arrow">→</span><span class="code-ins">${esc(m.after)}</span>`;
+  return `<span class="code-before">${esc(m.before)}</span><span class="code-arrow">→</span><span class="code-after">${esc(m.after)}</span>`;
+}
+
+function esc(s){return String(s).replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+
+function render() {
+  let data = activeFilter === 'all' ? [...MUTATIONS] : MUTATIONS.filter(m => m.type === activeFilter);
+  data.sort((a,b) => sortDir === 'desc' ? b.score - a.score : a.score - b.score);
+
+  if (document.getElementById('sc-num')) {
+    const totalMutations = data.length;
+    if (totalMutations > 0) {
+      const totalScore = data.reduce((sum, m) => sum + m.score, 0);
+      const avgScore = (totalScore / totalMutations).toFixed(1);
+      const uniqueTypes = new Set(data.map(m => m.type)).size;
+      const chaosScore = Math.round((totalScore / (totalMutations * 10)) * 100);
+      
+      document.getElementById('sc-num').innerText = chaosScore;
+      document.getElementById('sc-mutations').innerText = totalMutations;
+      document.getElementById('sc-types').innerText = uniqueTypes + ' unique types';
+      document.getElementById('sc-avg').innerText = avgScore;
+    } else {
+      document.getElementById('sc-num').innerText = 0;
+      document.getElementById('sc-mutations').innerText = 0;
+      document.getElementById('sc-types').innerText = '0 unique types';
+      document.getElementById('sc-avg').innerText = '0.0';
+    }
+  }
+
+  let html = '';
+  data.forEach((m, i) => {
+    const isOpen = openRow === m.id;
+    html += `<tr class="log-row${isOpen?' active':''}" onclick="toggleRow('${m.id}')">
+      <td class="row-num">${i+1}</td>
+      <td class="row-type">${typeBadge(m.type)}</td>
+      <td class="row-line">L${m.line}</td>
+      <td class="row-code">${codeChange(m)}</td>
+      <td class="row-score-td">
+        <div class="score-pip">
+          <span style="font-size:12px;color:${scoreColor(m.score)};font-weight:500">${m.score}/10</span>
+          <div class="score-dot" style="background:${scoreDot(m.score)}"></div>
+        </div>
+      </td>
+    </tr>
+    <tr class="expand-row">
+      <td colspan="5">
+        <div class="expand-inner${isOpen?' open':''}" id="exp-${m.id}">
+          <div class="expand-body">
+            <div class="exp-card">
+              <div class="exp-label">Before</div>
+              <div class="exp-val">${esc(m.before)}</div>
+            </div>
+            <div class="exp-card">
+              <div class="exp-label">After</div>
+              <div class="exp-val danger">${esc(m.after)}</div>
+            </div>
+            <div class="exp-card">
+              <div class="exp-label">Pass</div>
+              <div class="exp-val">pass ${m.pass}</div>
+            </div>
+            <div class="exp-card">
+              <div class="exp-label">Safe mode</div>
+              <div class="exp-val" style="color:${m.safe?'#1a8a5a':'#b83232'}">${m.safe?'allowed':'blocked'}</div>
+            </div>
+            <div class="exp-hint">${m.desc}</div>
+            <div class="exp-hint" style="border-color:rgba(100,100,100,.3);background:var(--color-background-secondary);color:var(--color-text-tertiary)">${m.hint}</div>
+          </div>
+        </div>
+      </td>
+    </tr>`;
+  });
+
+  document.getElementById('log-body').innerHTML = html;
+  const shown = data.length;
+  const types = new Set(data.map(m=>m.type)).size;
+  document.getElementById('footer-text').textContent = `${shown} mutation${shown!==1?'s':''} · ${types} unique type${types!==1?'s':''}`;
+}
+
+function toggleRow(id) {
+  openRow = openRow === id ? null : id;
+  render();
+}
+
+function setFilter(f) {
+  activeFilter = f;
+  document.querySelectorAll('.pill').forEach(p => p.classList.remove('active'));
+  document.getElementById('f-'+(f==='all'?'all':f)).classList.add('active');
+  openRow = null;
+  render();
+}
+
+function toggleSort() {
+  sortDir = sortDir === 'desc' ? 'asc' : 'desc';
+  document.getElementById('sort-icon').textContent = sortDir === 'desc' ? '↓' : '↑';
+  render();
+}
+
+function doExport(fmt) {
+  const data = activeFilter === 'all' ? MUTATIONS : MUTATIONS.filter(m=>m.type===activeFilter);
+  if (fmt === 'json') {
+    const blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+    a.download = 'mutations.json'; a.click();
+  } else {
+    const rows = [['id','type','line','before','after','score','safe','pass'],...data.map(m=>[m.id,m.type,m.line,m.before,m.after,m.score,m.safe,m.pass])];
+    const csv = rows.map(r=>r.map(v=>`"${v}"`).join(',')).join('\n');
+    const blob = new Blob([csv], {type:'text/csv'});
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+    a.download = 'mutations.csv'; a.click();
+  }
+}
+
+render();
+toggleRow('m3');
+</script>

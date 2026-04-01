@@ -3,17 +3,18 @@
 
 typedef enum {
     /* Literals */
-    TOK_NUMBER, TOK_FLOAT_LIT, TOK_STRING, TOK_CHAR_LIT, TOK_IDENT,
+    TOK_NUMBER, TOK_FLOAT_LIT, TOK_STRING_LITERAL, TOK_CHAR_LIT, TOK_IDENT,
 
     /* Keywords — types */
     TOK_INT, TOK_CHAR, TOK_FLOAT, TOK_DOUBLE, TOK_VOID,
+    TOK_LONG, TOK_SHORT, TOK_UNSIGNED, TOK_SIGNED, TOK_SIZE_T, TOK_BOOL,
 
     /* Keywords — control flow */
     TOK_RETURN, TOK_IF, TOK_ELSE, TOK_WHILE, TOK_FOR,
     TOK_BREAK, TOK_CONTINUE,
 
     /* Keywords — other */
-    TOK_STRUCT, TOK_TYPEDEF, TOK_SIZEOF, TOK_NULL,
+    TOK_STRUCT, TOK_TYPEDEF, TOK_SIZEOF, TOK_NULL, TOK_TRUE, TOK_FALSE,
 
     /* Arithmetic operators */
     TOK_PLUS, TOK_MINUS, TOK_STAR, TOK_SLASH, TOK_PERCENT,
@@ -39,7 +40,7 @@ typedef enum {
     TOK_DOT, TOK_ARROW, TOK_COLON, TOK_QUESTION, TOK_HASH,
 
     /* Special */
-    TOK_EOF, TOK_UNKNOWN
+    TOK_PREPROCESSOR, TOK_EOF, TOK_UNKNOWN
 } TokenType;
 
 typedef struct {

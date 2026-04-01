@@ -1,60 +1,212 @@
 .panel {
-  width: 240px;
+  width: 280px;
   flex-shrink: 0;
   background: var(--surface-1);
   border-left: 1px solid var(--surface-3);
-  padding: var(--space-4);
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
 }
 
 .placeholder {
-  font-size: 12px;
+  font-size: 13px;
   color: var(--text-tertiary);
   text-align: center;
   margin-top: var(--space-6);
+  padding: 0 var(--space-4);
   line-height: 1.6;
+}
+
+.content {
+  display: flex;
+  flex-direction: column;
+}
+
+.header {
+  padding: var(--space-4);
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--surface-3);
 }
 
 .nodeType {
   font-family: var(--font-display);
-  font-size: 15px;
-  font-weight: 600;
+  font-size: 16px;
+  font-weight: 700;
   color: var(--text-primary);
+  margin-bottom: var(--space-1);
+}
+
+.alias {
+  font-size: 12px;
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
+.section {
+  padding: var(--space-4);
+  border-bottom: 1px solid var(--surface-3);
+}
+
+.sectionTitle {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-tertiary);
+  font-weight: 600;
+  margin-bottom: var(--space-3);
 }
 
 .table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 12px;
+  font-size: 13px;
 }
 
 .table td {
-  padding: 5px 0;
-  border-bottom: 1px solid var(--surface-3);
-  vertical-align: top;
+  padding: 4px 0;
 }
 
 .table td:first-child {
   color: var(--text-tertiary);
   font-weight: 500;
-  width: 60px;
-  padding-right: var(--space-2);
+  width: 80px;
 }
 
 .table td:last-child {
-  font-family: var(--font-code);
   color: var(--text-primary);
-  word-break: break-all;
+  font-family: var(--font-code);
 }
 
-.description {
-  font-size: 12px;
-  color: var(--text-secondary);
-  line-height: 1.6;
-  background: var(--surface-2);
+.parentBadge {
+  display: inline-block;
+  background: var(--surface-3);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 11px;
+}
+
+.snippetBlock {
+  background: var(--surface-0);
+  border: 1px solid var(--surface-3);
   border-radius: var(--radius-md);
   padding: var(--space-3);
+  margin: 0;
+  overflow-x: auto;
+}
+
+.snippetBlock code {
+  color: var(--text-primary);
+  font-family: var(--font-code);
+  font-size: 12px;
+}
+
+.cardGrid {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.contextCard {
+  background: var(--surface-2);
+  border: 1px solid var(--surface-3);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.cardKey {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.cardVal {
+  font-size: 13px;
+  font-family: var(--font-code);
+  color: var(--primary-light);
+  font-weight: 600;
+}
+
+.childList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.childBadge {
+  background: var(--surface-2);
+  border: 1px solid var(--surface-3);
+  padding: 3px 8px;
+  border-radius: var(--radius-full);
+  font-size: 11px;
+  font-family: var(--font-code);
+  color: var(--text-secondary);
+}
+
+.mutationSection {
+  padding: var(--space-4);
+  background: rgba(212, 82, 42, 0.05); /* very light tint of the #c94c24 */
+  border-bottom: 1px solid rgba(212, 82, 42, 0.1);
+}
+
+.mutationTitle {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #c94c24; /* matching the user requirement */
+  font-weight: 700;
+  margin-bottom: var(--space-3);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.mutationTitle::before {
+  content: '?';
+}
+
+.mutationBox {
+  background: rgba(212, 82, 42, 0.1);
+  border: 1px solid rgba(212, 82, 42, 0.3);
+  border-radius: var(--radius-md);
+  padding: var(--space-3);
+}
+
+.mutationBox strong {
+  display: block;
+  font-size: 12px;
+  color: #c94c24;
+  margin-bottom: var(--space-2);
+}
+
+.mutationDiff {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-family: var(--font-code);
+  font-size: 13px;
+}
+
+.mutOld {
+  color: var(--text-tertiary);
+  text-decoration: line-through;
+}
+
+.mutArrow {
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+.mutNew {
+  color: #c94c24;
+  font-weight: 600;
+}
+
+.emptyVal {
+  font-size: 13px;
+  color: var(--text-tertiary);
+  font-style: italic;
 }

@@ -2,7 +2,7 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useCompiler } from '../store/useCompilerStore';
-import MutationTable from '../components/compiler/MutationTable';
+import MutationLog from '../components/compiler/MutationLog';
 import EmptyState from '../components/ui/EmptyState';
 import LoadingSkeleton from '../components/LoadingSkeleton';
 import styles from './LogPage.module.css';
@@ -75,7 +75,7 @@ export default function LogPage() {
       </div>
       <div className={styles.tableWrapContainer} style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
         <div className={styles.tableWrap} style={{ flex: 1 }}>
-          <MutationTable mutations={state.mutations} />
+          <MutationLog />
         </div>
         {/* Right context panel */}
         <motion.div 

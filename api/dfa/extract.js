@@ -40,9 +40,9 @@ module.exports = async function handler(req, res) {
   const { code } = req.body || {};
   if (!code) return res.status(400).json({ error: 'No code' });
 
-  const hasIdent  = /\\b[a-zA-Z_]\\w*\\b/.test(code);
-  const hasNumber = /\\b\\d+\\b/.test(code);
-  const hasOp     = /[+\\-*\\/<>=!&|]/.test(code);
+  const hasIdent  = /\b[a-zA-Z_]\w*\b/.test(code);
+  const hasNumber = /\b\d+\b/.test(code);
+  const hasOp     = /[+\-*\/<>=!&|]/.test(code);
 
   const relevantStates = new Set(['START', 'ACCEPT']);
   if (hasIdent)  relevantStates.add('IDENT');

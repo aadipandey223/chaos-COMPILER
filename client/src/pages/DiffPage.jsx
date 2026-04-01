@@ -97,7 +97,7 @@ export default function DiffPage() {
             transition={{ duration: 0.2 }}
             style={{ width: '100%', height: '100%' }}
           >
-            <DiffViewer code={state.code} mutations={state.mutations} />
+            <DiffViewer />
           </motion.div>
         </AnimatePresence>
       </div>
