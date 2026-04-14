@@ -2,6 +2,7 @@ const { execFile } = require('child_process');
 const path = require('path');
 const fs = require('fs').promises;
 const os = require('os');
+const { parseWithTreeSitter } = require('../server/utils/treeSitterParser');
 
 const COMPILER_BIN = path.resolve(
   __dirname,
@@ -66,6 +67,19 @@ function runCompiler(filePath, options = {}) {
   });
 }
 
+async function runFallbackParser(code, options = {}) {
+  const ast = await parseWithTreeSitter(code, '.c');
+  const warning = options.mutate !== false
+    ? 'Native chaos binary unavailable: returning parsed AST without mutations.'
+    : null;
+
+  return {
+    ast,
+    mutations: [],
+    stderr: warning,
+  };
+}
+
 module.exports = async function handler(req, res) {
   // Enable CORS
   res.setHeader('Access-Control-Allow-Credentials', 'true');
@@ -88,18 +102,6 @@ module.exports = async function handler(req, res) {
   let tempFilePath = null;
 
   try {
-    // Verify compiler binary exists
-    try {
-      await fs.access(COMPILER_BIN);
-    } catch {
-      console.error(`Compiler binary not found at: ${COMPILER_BIN}`);
-      return res.status(500).json({
-        ok: false,
-        error: 'Compiler binary not found. Please rebuild and redeploy.',
-        type: 'deployment_error'
-      });
-    }
-
     // Parse JSON body (Vercel automatically parses application/json)
     const body = req.body || {};
     const { 
@@ -132,7 +134,7 @@ module.exports = async function handler(req, res) {
 
     let result;
     try {
-      result = await runCompiler(tempFilePath, {
+      const compilerOptions = {
         mutate: mutate !== false,
         intensity: intensity || 'low',
         seed: seed || null,
@@ -142,7 +144,14 @@ module.exports = async function handler(req, res) {
         excludeLines: excludeLines || [],
         chainDepth: chainDepth || 1,
         targetMask: targetMask || 0,
-      });
+      };
+
+      try {
+        await fs.access(COMPILER_BIN);
+        result = await runCompiler(tempFilePath, compilerOptions);
+      } catch {
+        result = await runFallbackParser(code, compilerOptions);
+      }
     } catch (compilerError) {
       console.error('Compiler error:', compilerError);
       return res.status(400).json({

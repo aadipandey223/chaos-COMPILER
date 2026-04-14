@@ -2,27 +2,41 @@ const TreeSitter = require('web-tree-sitter');
 const Parser = TreeSitter;
 const Language = TreeSitter.Language;
 const path   = require('path');
+const fs     = require('fs');
 
 let parserC   = null;
 let parserCpp = null;
 let initialized = false;
+
+function resolveNodeModuleFile(...segments) {
+    const candidates = [
+        path.join(__dirname, '..', 'node_modules', ...segments),
+        path.join(__dirname, '..', '..', 'node_modules', ...segments),
+    ];
+
+    for (const filePath of candidates) {
+        if (fs.existsSync(filePath)) return filePath;
+    }
+
+    throw new Error(`Unable to locate dependency file: ${segments.join('/')}`);
+}
 
 async function initParsers() {
     if (initialized) return;
     await Parser.init({
         locateFile: (scriptName) => {
             if (scriptName === 'tree-sitter.wasm') {
-                return path.join(__dirname, '../node_modules/web-tree-sitter/tree-sitter.wasm');
+                return resolveNodeModuleFile('web-tree-sitter', 'tree-sitter.wasm');
             }
             return scriptName;
         }
     });
 
     const langC = await Parser.Language.load(
-        path.join(__dirname, '../node_modules/tree-sitter-wasms/out/tree-sitter-c.wasm')
+        resolveNodeModuleFile('tree-sitter-wasms', 'out', 'tree-sitter-c.wasm')
     );
     const langCpp = await Parser.Language.load(
-        path.join(__dirname, '../node_modules/tree-sitter-wasms/out/tree-sitter-cpp.wasm')
+        resolveNodeModuleFile('tree-sitter-wasms', 'out', 'tree-sitter-cpp.wasm')
     );
 
     parserC = new Parser();

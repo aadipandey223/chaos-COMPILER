@@ -8,7 +8,11 @@
     "client": "cd client && npm run dev",
     "chaos": "concurrently --kill-others \"npm run server\" \"npm run client\"",
     "build": "cd client && npm install && npm run build",
-    "build-compiler": "gcc -O2 compiler/main.c compiler/lexer.c compiler/parser.c compiler/ast.c compiler/chaos.c -o compiler/chaos-compiler -lm"
+    "build-compiler": "node scripts/build-compiler.js"
+  },
+  "dependencies": {
+    "tree-sitter-wasms": "^0.1.13",
+    "web-tree-sitter": "^0.20.8"
   },
   "devDependencies": {
     "concurrently": "^8.2.2",
