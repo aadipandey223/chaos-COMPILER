@@ -49,4 +49,45 @@ router.post('/extract', async (req, res) => {
   });
 });
 
+router.post('/trace', async (req, res) => {
+  const { token, type } = req.body || {};
+  if (!token || typeof token !== 'string') {
+    return res.status(400).json({ ok: false, error: 'Missing token value' });
+  }
+
+  const chars = Array.from(token);
+  const states = [];
+  const transitions = [];
+
+  // Build a simple linear DFA trace: q0 --c1--> q1 --c2--> q2 ... qN
+  const lastIndex = chars.length;
+  for (let i = 0; i <= lastIndex; i++) {
+    states.push({
+      id: `q${i}`,
+      label: i === 0 ? 'Start' : `q${i}`,
+      isStart: i === 0,
+      isAccept: i === lastIndex,
+    });
+  }
+
+  chars.forEach((ch, i) => {
+    transitions.push({
+      id: `t${i}`,
+      from: `q${i}`,
+      to: `q${i + 1}`,
+      label: ch,
+    });
+  });
+
+  res.json({
+    ok: true,
+    type: type || 'UNKNOWN',
+    token,
+    states,
+    transitions,
+    traceStates: states.map(s => s.id),
+    traceEdges: transitions.map(t => t.id),
+  });
+});
+
 module.exports = router;

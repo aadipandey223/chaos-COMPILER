@@ -3,6 +3,33 @@
   "outputDirectory": "client/dist",
   "installCommand": "npm install",
   "framework": null,
+  "trailingSlash": false,
+  "headers": [
+    {
+      "source": "/",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-store, max-age=0"
+        }
+      ]
+    },
+    {
+      "source": "/index.html",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-store, max-age=0"
+        }
+      ]
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/((?!api/|assets/|favicon\\.svg|icons\\.svg).*)",
+      "destination": "/index.html"
+    }
+  ],
   "functions": {
     "api/**/*.js": {
       "includeFiles": "{compiler/chaos-compiler,compiler/chaos-compiler.exe,node_modules/web-tree-sitter/tree-sitter.wasm,node_modules/tree-sitter-wasms/out/*.wasm}"

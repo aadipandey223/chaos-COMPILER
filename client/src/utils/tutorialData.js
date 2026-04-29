@@ -127,11 +127,3 @@ export const CODEGEN_STEPS = [
   { nodeId: 'ret2',  output: '    return b;'            },
   { nodeId: null,    output: '}'                        },
 ];
-
-export const STAGES = [
-  { id: 'lexer',    label: 'Lexical Analysis', path: '/learn/lexer'    },
-  { id: 'parser',   label: 'Parsing',          path: '/learn/parser'   },
-  { id: 'ast',      label: 'AST Building',     path: '/learn/ast'      },
-  { id: 'semantic', label: 'Semantic Analysis',path: '/learn/semantic' },
-  { id: 'codegen',  label: 'Code Generation',  path: '/learn/codegen'  },
-];

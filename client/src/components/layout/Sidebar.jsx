@@ -10,6 +10,7 @@ const NAV_ITEMS = [
   { to: '/app/ast',    label: 'AST Tree',      icon: '⬡'   },
   { to: '/app/diff',   label: 'Diff',          icon: '⇄'   },
   { to: '/app/log',    label: 'Mutation Log',  icon: '≡'   },
+  { to: '/app/learners', label: 'Learners',    icon: '✦'   },
 ];
 
 export default function Sidebar() {
@@ -70,13 +71,6 @@ export default function Sidebar() {
           </NavLink>
         ))}
       </motion.nav>
-
-      <Divider />
-
-      <Link to="/learn" className={styles.learnLink}>
-        <span className={styles.icon}>◈</span>
-        <span className={styles.labelText}>Learn</span>
-      </Link>
 
       <Divider />
 

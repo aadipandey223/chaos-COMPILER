@@ -8,7 +8,6 @@ import { ThemeContext } from './context/ThemeContext';
 import ErrorBoundary from './components/ui/ErrorBoundary';
 import AppShell from './components/layout/AppShell';
 import LandingPage from './pages/LandingPage';
-import LearnPage from './pages/LearnPage';
 
 const pageVariants = {
   initial:  { opacity: 0, y: 12, filter: 'blur(3px)' },
@@ -41,7 +40,7 @@ function KeyboardShortcuts() {
         return;
       }
 
-      const pageMap = { '1': '/app/editor', '2': '/app/ast', '3': '/app/diff', '4': '/app/log' };
+      const pageMap = { '1': '/app/editor', '2': '/app/ast', '3': '/app/diff', '4': '/app/log', '5': '/app/learners' };
       if (pageMap[e.key]) {
         e.preventDefault();
         navigate(pageMap[e.key]);
@@ -75,7 +74,6 @@ function AppRoutes() {
           <Routes location={location}>
             <Route path="/" element={<LandingPage />} />
             <Route path="/app/*" element={<AppShell />} />
-            <Route path="/learn/*" element={<LearnPage />} />
           </Routes>
         </motion.div>
       </AnimatePresence>

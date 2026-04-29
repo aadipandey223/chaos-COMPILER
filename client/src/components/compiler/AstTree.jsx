@@ -299,6 +299,12 @@ const AstTree = ({ data, onNodeClick, search = '', mutatedLines = new Set() }) =
     }
   }, [renderTreeCore, replayMode]);
 
+  useEffect(() => {
+    if (!replayMode || !isPlaying) return;
+    // Re-arm the replay interval so speed changes apply instantly.
+    startPlay();
+  }, [speed, replayMode, isPlaying]);
+
   // Zoom helpers
   const handleZoomIn = () => {
     if (svgRef.current && zoomRef.current) {

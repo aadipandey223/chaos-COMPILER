@@ -56,9 +56,6 @@ export default function CTASection() {
           <Link to="/app/editor" className={styles.ctaPrimary}>
             Start compiling →
           </Link>
-          <Link to="/learn" className={styles.ctaSecondary}>
-            See how it works
-          </Link>
         </motion.div>
       </div>
 

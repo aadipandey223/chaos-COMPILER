@@ -15,7 +15,6 @@ export default function Navbar() {
 
       <div className={`${styles.links} ${menuOpen ? styles.open : ''}`}>
         <Link to="/app/editor" className={styles.link}>Editor</Link>
-        <Link to="/learn" className={styles.link}>Learn</Link>
         <a
           href="https://github.com"
           target="_blank"
@@ -24,7 +23,6 @@ export default function Navbar() {
         >
           GitHub ↗
         </a>
-        <Link to="/app/editor" className={styles.cta}>Start compiling →</Link>
       </div>
 
       <button

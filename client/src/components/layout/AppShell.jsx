@@ -9,6 +9,7 @@ const EditorPage = lazy(() => import('../../pages/EditorPage'));
 const AstPage = lazy(() => import('../../pages/AstPage'));
 const DiffPage = lazy(() => import('../../pages/DiffPage'));
 const LogPage = lazy(() => import('../../pages/LogPage'));
+const LearnPage = lazy(() => import('../../pages/LearnPage'));
 
 export default function AppShell() {
   return (
@@ -25,6 +26,8 @@ export default function AppShell() {
                 <Route path="ast"    element={<AstPage />} />
                 <Route path="diff"   element={<DiffPage />} />
                 <Route path="log"    element={<LogPage />} />
+                <Route path="learners" element={<LearnPage />} />
+                <Route path="learn" element={<LearnPage />} />
               </Routes>
             </Suspense>
           </ErrorBoundary>

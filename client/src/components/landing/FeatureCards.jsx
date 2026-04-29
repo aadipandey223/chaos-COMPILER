@@ -18,13 +18,6 @@ const FEATURES = [
     link: '/app/log',
     accent: '#e05c3a',
   },
-  {
-    icon: '◈',
-    title: 'Learn Mode',
-    desc: '5-stage animated compiler walkthrough — from lexer to code generation. No textbook required.',
-    link: '/learn',
-    accent: '#5090d8',
-  },
 ];
 
 function TiltCard({ children, accent }) {

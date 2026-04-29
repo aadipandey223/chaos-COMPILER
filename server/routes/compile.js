@@ -79,6 +79,7 @@ router.post('/compile', (req, res, next) => {
     return res.json({
       ok:        true,
       ast:       result.ast,
+      tokens:    result.tokens,
       mutations: result.mutations,
       warnings:  result.warnings || null,
     });

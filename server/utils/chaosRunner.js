@@ -5,6 +5,7 @@ const os           = require('os');
 const {
     parseWithTreeSitter
 } = require('./treeSitterParser');
+const { tokenize } = require('./lexer');
 
 const COMPILER_BIN = process.env.COMPILER_PATH ||
     path.resolve(
@@ -18,10 +19,13 @@ async function runWithTreeSitter(sourceCode, fileExt,
                                   options = {}) {
     // Step 1: Parse with Tree-sitter (Node.js, fast)
     const ast = await parseWithTreeSitter(sourceCode, fileExt);
+    
+    // Step 1.5: Extract tokens using Regex Lexer for Learner UI
+    const tokens = tokenize(sourceCode);
 
     if (!options.mutate) {
         // No mutation requested — return AST directly
-        return { ast, mutations: [], warnings: null };
+        return { ast, tokens, mutations: [], warnings: null };
     }
 
     // Step 2: Write AST JSON to temp file
@@ -85,6 +89,7 @@ async function runWithTreeSitter(sourceCode, fileExt,
                     );
                     resolve({
                         ast:       result.ast       || ast,
+                        tokens,
                         mutations: result.mutations || [],
                         warnings:  stderr || null,
                     });
@@ -98,6 +103,7 @@ async function runWithTreeSitter(sourceCode, fileExt,
                     );
                     resolve({
                         ast,
+                        tokens,
                         mutations: [],
                         warnings:  'Mutation engine output ' +
                                    'could not be parsed',

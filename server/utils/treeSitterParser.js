@@ -358,9 +358,62 @@ function fixChildCounts(node) {
     return node;
 }
 
+const KEYWORDS = new Set([
+  'int', 'float', 'double', 'char', 'void', 'long', 'short', 'signed', 'unsigned',
+  'if', 'else', 'for', 'while', 'do', 'switch', 'case', 'default', 'break', 'continue',
+  'return', 'struct', 'union', 'enum', 'typedef', 'sizeof', 'static', 'extern',
+  'const', 'volatile', 'register', 'auto', 'goto'
+]);
+
+function getTokenType(node) {
+    if (node.isMissing) return 'ERROR';
+    if (KEYWORDS.has(node.type)) return 'KEYWORD';
+    if (['number_literal', 'integer_literal', 'float_literal'].includes(node.type)) return 'NUMBER';
+    if (node.type === 'identifier') return 'IDENTIFIER';
+    if (['string_literal', 'char_literal'].includes(node.type)) return 'STRING';
+    if (node.type === 'comment') return 'COMMENT';
+    if (node.type.match(/^[(){}\\[\\].,;:?]$/)) return 'PUNCTUATION';
+    if (node.type === 'ERROR') return 'ERROR';
+    if (node.type.match(/^[-+*\/%<>=!&|^~]+$/)) return 'OPERATOR';
+    if (!node.isNamed) {
+        if (node.type.match(/^[a-zA-Z_]\w*$/)) return 'KEYWORD';
+        if (node.type.match(/^[-+*\/%<>=!&|^~]+$/)) return 'OPERATOR';
+        return 'PUNCTUATION';
+    }
+    return 'UNKNOWN';
+}
+
+function extractTokensRecursively(node, src, tokens) {
+    if (node.childCount === 0) {
+        const text = src.slice(node.startIndex, node.endIndex);
+        if (text.trim().length > 0) {
+            tokens.push({
+                type: getTokenType(node),
+                value: text,
+                line: node.startPosition.row + 1
+            });
+        }
+        return;
+    }
+    for (let c of node.children) {
+        extractTokensRecursively(c, src, tokens);
+    }
+}
+
+async function extractTokensWithTreeSitter(sourceCode, fileExt = '.c') {
+    await initParsers();
+    const parser = fileExt === '.cpp' ? parserCpp : parserC;
+    const tree = parser.parse(sourceCode);
+    const tokens = [];
+    extractTokensRecursively(tree.rootNode, sourceCode, tokens);
+    // Ignore comments specifically so Learner matches closely to actual token lists
+    return tokens.filter(t => t.type !== 'COMMENT' && t.type !== 'UNKNOWN');
+}
+
 module.exports = {
     parseWithTreeSitter: async (code, ext) => {
         const ast = await parseWithTreeSitter(code, ext);
         return fixChildCounts(ast);
-    }
+    },
+    extractTokensWithTreeSitter
 };
